@@ -40,7 +40,7 @@ namespace ReplaceText
             ".0", ".1", ".bc", ".bc!", ".bdf", ".bgf", ".bi", ".bin", ".ctx", ".com",
             ".dmg", ".dmt", ".db", ".sqlite", ".zip", ".rar", ".7z", ".gz", ".flv",
             ".fla", ".swf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".pdf",
-            ".vsd", ".chm", ".rp", ".cp", ".xmind", ".cache", ".resources", ".licenses",
+            ".vsd", ".chm", ".rp", ".rpt", ".cp", ".xmind", ".cache", ".resources", ".licenses",
             ".sis", ".wmv", ".avi", ".mp3", ".mp4", ".mdf", ".ldf", ".msg", ".jpg",
             ".gif", ".png", ".bmp", ".tif", ".psd", ".ai", ".ico", ".ttf", ".ttc",
             // development/build artifacts
