@@ -1,14 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.IO;
 using System.Text.RegularExpressions;
 
 namespace ReplaceText
 {
-    class Program
+    internal class Program
     {
+        static Program()
+        {
+            // 在 .NET Core/.NET 5+ 中，需要註冊編碼提供者以支援 Big5、GBK 等編碼
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        }
+
         /// <summary>
         /// 是否為測試執行模式
         /// </summary>
@@ -38,11 +44,10 @@ namespace ReplaceText
         private static void Main(string[] args)
         {
             int argCounter = 0;
-            int curCounter = 0;
 
-            string path = null;
-            string oldValue = null;
-            string newValue = null;
+            string? path = null;
+            string? oldValue = null;
+            string? newValue = null;
 
             #region Argument Checking
 
@@ -97,7 +102,7 @@ namespace ReplaceText
                 }
             }
 
-            if (String.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path))
             {
                 ShowHelp();
                 return;
@@ -124,10 +129,9 @@ namespace ReplaceText
 
                 if (bModifyTextFile)
                 {
-                    valid_file_exts += " *.txt *.csv";
+                    valid_file_exts += " *.txt *.md *.log *.sql *.csv *.ini";
                 }
 
-                int fileCount = 0;
                 foreach (var searchPattern in valid_file_exts.Split(' '))
                 {
                     foreach (string filePath in Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
@@ -160,7 +164,7 @@ namespace ReplaceText
             Console.WriteLine();
         }
 
-        private static void ProcessFile(string filePath, string oldValue, string newValue)
+        private static void ProcessFile(string filePath, string? oldValue, string? newValue)
         {
             if (File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
             {
@@ -337,14 +341,14 @@ namespace ReplaceText
 
                 #region 執行字串取代動作
 
-                if (!bTestRun && !String.IsNullOrEmpty(oldValue) && newValue != null)
+                if (!bTestRun && !string.IsNullOrEmpty(oldValue) && newValue != null)
                 {
                     newContent = oldContent.Replace(oldValue, newValue);
                 }
 
                 #endregion
 
-                if (!String.IsNullOrEmpty(newContent))
+                if (!string.IsNullOrEmpty(newContent))
                 {
                     if (oldContent != newContent)
                     {
@@ -692,10 +696,8 @@ namespace ReplaceText
                 case ".ttf":
                 case ".ttc":
                     return true;
-                    break;
                 default:
                     return false;
-                    break;
             }
 
         }
@@ -716,10 +718,8 @@ namespace ReplaceText
                     case ".csv":
                     case ".txt":
                         return true;
-                        break;
                     default:
                         return false;
-                        break;
                 }
             }
             else
