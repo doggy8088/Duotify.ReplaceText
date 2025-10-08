@@ -153,7 +153,7 @@ jobs:
           完整說明文件請參閱 [README.md](https://github.com/doggy8088/ReplaceText/blob/main/README.md)
         draft: false
         prerelease: false
-        target_commitish: ${{ github.sha }}
+        commitish: ${{ github.sha }}
 
     - name: 📦 將 nupkg 上傳到 Release (僅在 NuGet 尚未有此版本時執行)
       if: steps.check_nuget.outputs.exists == 'false'
