@@ -29,6 +29,12 @@ namespace ReplaceText
         /// </summary>
         private static bool bModifyTextFile = false;
 
+        /// <summary>
+        /// 讓 GBK (GB18030) 字集優先於 Big5 判斷
+        /// </summary>
+        private static bool bGBKFirst = false;
+
+
         private static void Main(string[] args)
         {
             int argCounter = 0;
@@ -63,6 +69,12 @@ namespace ReplaceText
                     bVerbose = true;
                     continue;
                 }
+                // 讓 GBK (GB18030) 字集優先於 Big5 判斷
+                else if (item.ToUpper() == "/GBK" || item.ToLower() == "-gbk")
+                {
+                    bGBKFirst = true;
+                    continue;
+                }
                 else
                 {
                     switch (argCounter)
@@ -93,13 +105,22 @@ namespace ReplaceText
 
             #endregion
 
-            bool isDir = ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory);
+            bool isDir;
+
+            try
+            {
+                isDir = ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Path not found: " + path + "(" + ex.Message + ")");
+            }
 
             if (isDir)
             {
                 List<string> files = new List<string>();
 
-                string valid_file_exts = "*.sln *.vb *.cs *.jsl *.xsd *.settings *.htm *.html *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd  *.rdlc *.js *.vbs *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl";
+                string valid_file_exts = "*.sln *.cs *.js *.vb *.vbs *.jsl *.xsd *.settings *.htm *.html *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd *.rdlc *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asax *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl *.edmx *.dbml";
 
                 if (bModifyTextFile)
                 {
@@ -129,12 +150,13 @@ namespace ReplaceText
 
         private static void ShowHelp()
         {
-            Console.WriteLine("ReplaceText.exe /T /M /V /F <Directory|File>");
+            Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK <Directory|File>");
             Console.WriteLine();
             Console.WriteLine("/T\t測試執行模式，不會寫入檔案 (Dry Run)");
             Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 2010 程式相關檔案)");
             Console.WriteLine("/V\t顯示詳細輸出模式，會顯示所有掃描的檔案清單");
             Console.WriteLine("/F\t顯示完整的檔案路徑(預設僅顯示相對路徑)");
+            Console.WriteLine("/GBK\t讓 GBK (GB18030) 字集優先於 Big5 判斷");
             Console.WriteLine();
         }
 
@@ -149,6 +171,9 @@ namespace ReplaceText
 
                 string oldContent_BIG5 = File.ReadAllText(filePath, Encoding.GetEncoding("Big5"));
                 string oldContent_BIG5_Only = GetAllBIG5Chars(filePath);
+
+                string oldContent_GBK = File.ReadAllText(filePath, Encoding.GetEncoding("GBK"));
+                string oldContent_GBK_Only = GetAllGBKChars(filePath);
 
                 string oldContent_ISO88591 = File.ReadAllText(filePath, Encoding.GetEncoding("ISO-8859-1"));
                 string oldContent_ISO88591_Only = GetAllISO88591Chars(filePath);
@@ -195,7 +220,7 @@ namespace ReplaceText
 
                     encoding = "Unicode";
                 }
-                
+
                 // UTF-8 的 BOM 字元 ( EF BB BF )
                 // http://zh.wikipedia.org/zh-tw/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
                 if (b1 == 0xEF && b2 == 0xBB && b3 == 0xBF)
@@ -228,18 +253,65 @@ namespace ReplaceText
 
                 #endregion
 
-                #region ...  判斷 BIG5 編碼  ...
-
-                if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                if (bGBKFirst)
                 {
-                    is_valid_charset = true;
+                    #region ...  判斷 GBK 編碼  ...
 
-                    oldContent = oldContent_BIG5;
+                    if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
+                    {
+                        is_valid_charset = true;
 
-                    encoding = "BIG5";
+                        oldContent = oldContent_GBK;
+
+                        encoding = "GBK";
+                    }
+
+                    #endregion
+
+                    #region ...  判斷 BIG5 編碼  ...
+
+                    if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_BIG5;
+
+                        encoding = "BIG5";
+                    }
+
+                    #endregion
+
                 }
+                else
+                {
 
-                #endregion
+                    #region ...  判斷 BIG5 編碼  ...
+
+                    if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_BIG5;
+
+                        encoding = "BIG5";
+                    }
+
+                    #endregion
+
+                    #region ...  判斷 GBK 編碼  ...
+
+                    if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_GBK;
+
+                        encoding = "GBK";
+                    }
+
+                    #endregion
+
+                }
 
                 #region ...  判斷 ISO-8859-1 編碼  ...
 
@@ -257,7 +329,7 @@ namespace ReplaceText
                 if (!is_valid_charset)
                 {
                     Console.Write(StripCurrentPath(filePath));
-                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5與ISO-8859-1編碼)", ConsoleColor.Yellow);
+                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)", ConsoleColor.Yellow);
                     return;
                 }
 
@@ -290,6 +362,16 @@ namespace ReplaceText
                     {
                         Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
+
+                        if (!bTestRun)
+                        {
+                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                        }
+                    }
+                    else if (encoding == "GBK")
+                    {
+                        Console.Write(StripCurrentPath(filePath));
+                        ConsoleWriteLineWithColor(" (GBK -> UTF-8)", ConsoleColor.DarkGreen);
 
                         if (!bTestRun)
                         {
@@ -332,6 +414,7 @@ namespace ReplaceText
                 }
             }
         }
+
         private static string StripCurrentPath(string path)
         {
             if (bShowFullPath)
@@ -404,12 +487,56 @@ namespace ReplaceText
             return sb.ToString();
         }
 
+        private static string GetAllGBKChars(string path)
+        {
+            // GB18030
+            // http://publib.boulder.ibm.com/infocenter/aix/v6r1/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/code_range_big5.htm
+
+            // GB2312 (Simplified Chinese) character code table
+            // http://ash.jp/code/cn/gb2312tbl.htm
+
+            Regex rx = new Regex(@"[\x00]
+                                 | [\x09\x0A\x0D\x20-\x7E]   # ASCII
+                                 | [\xA1-\xA9][\xA1-\xFE]    # GB2312, GB12345 (GBK/1)
+                                 | [\xA8-\xA9][\x40-\xA0]    # Big5, Symbols (GBK/5)
+                                 | [\xB0-\xF7][\xA1-\xFE]    # GB2312 (GBK/2)
+                                 | [\x81-\xA0][\x40-\xFE]    # GB13000 (GBK/3)
+                                 | [\xAA-\xFE][\x40-\xA0]    # GB13000 (GBK/4)
+                                 | [\xAA-\xAF][\xA1-\xFE]    # User defined 1
+                                 | [\xF8-\xFE][\xA1-\xFE]    # User defined 2
+                                 | [\xA1-\xA7][\x40-\xA0]    # User defined 3
+                                 ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            StringBuilder sb = new StringBuilder();
+
+            string data = ReadAllChars(path);
+
+            foreach (Match mx in rx.Matches(data))
+            {
+                byte[] bb = new byte[mx.Value.Length];
+
+                for (int i = 0; i < mx.Value.Length; i++)
+                {
+                    bb[i] = (byte)mx.Value[i];
+                }
+
+                string a = Encoding.GetEncoding("GBK").GetString(bb);
+
+                sb.Append(a);
+            }
+
+            return sb.ToString();
+        }
+
         private static string GetAllBIG5Chars(string path)
         {
             // http://www.ascc.sinica.edu.tw/nl/85/1208/02.txt
             // http://publib.boulder.ibm.com/infocenter/aix/v6r1/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/code_range_big5.htm
             // http://ash.jp/code/cn/big5tbl.htm
             // http://kura.hanazono.ac.jp/paper/codes.html
+
+            // Code range for Big5 locale
+            // http://publib.boulder.ibm.com/infocenter/aix/v6r1/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/code_range_big5.htm
 
             Regex rx = new Regex(@"[\x00]
                                  | [\x09\x0A\x0D\x20-\x7E]            # ASCII
@@ -604,7 +731,7 @@ namespace ReplaceText
         private static bool IsSkipFolder(string path)
         {
             if (path.ToLower().EndsWith(".bat")
-                || path.ToLower().Contains(@"\.svn\") || path.ToLower().Contains(@"\_svn\") 
+                || path.ToLower().Contains(@"\.svn\") || path.ToLower().Contains(@"\_svn\")
                 // 跳過一些 zh-cn 的檔案，因為這些可能就是簡體文字，不應該用 Big5 轉換成 UTF-8！
                 || path.ToLower().Contains(@"zh-cn")
                 || (path.ToLower().EndsWith(".js") && path.ToLower().Contains("lang"))
