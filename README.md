@@ -66,12 +66,67 @@ dotnet tool uninstall --global ReplaceText
 
 📖 **詳細安裝說明請參閱 [INSTALL.md](INSTALL.md)**
 
-### 方式 2：從原始碼建構
+### 方式 2：從原始碼建構 (在本機安裝)
 
-```bash
+下列步驟示範如何從原始程式碼在本機安裝和測試 `ReplaceText`，包含：打包成本機 NuGet 套件後以全域工具安裝、安裝為 local tool，以及直接執行或發佈可執行檔三種常用方式。
+
+注意：以下命令適用於已安裝 .NET 8.0 SDK 的 Windows PowerShell (pwsh)。
+
+1. 建構並打包成本機 NuGet 套件，然後以全域工具安裝 (推薦)
+
+```powershell
+# 下載原始程式碼並切到專案資料夾
 git clone https://github.com/doggy8088/ReplaceText.git
 cd ReplaceText
-dotnet build -c Release
+
+# 建構並產生 nupkg (Release); 套件預設會輸出到 ReplaceText\nupkg
+dotnet pack .\ReplaceText\ReplaceText.csproj -c Release
+
+# 解除安裝舊版 (如果已安裝)
+dotnet tool uninstall --global ReplaceText
+
+# 從本機 nupkg 資料夾安裝為全域工具
+dotnet tool install --global ReplaceText --add-source .\ReplaceText\nupkg
+
+# 驗證安裝
+dotnet tool list -g
+replacetext --help
+```
+
+1. 安裝為 local tool (只在此儲存庫 / 專案範圍可用)
+
+```powershell
+# 在儲存庫根建立 tool manifest(如果尚未建立)
+dotnet new tool-manifest
+
+# 從本機 nupkg 安裝到 local tool(會記錄在 .config/dotnet-tools.json)
+dotnet tool install ReplaceText --local --add-source .\ReplaceText\nupkg
+
+# 執行 local tool(透過 dotnet tool run)
+dotnet tool run replacetext -- --help
+```
+
+1. 直接從原始程式碼執行或發佈單一執行檔 (不需安裝)
+
+```powershell
+# 直接以 dotnet run 在開發/測試時執行
+dotnet run --project .\ReplaceText\ReplaceText.csproj -- C:\MyProject
+
+# 發佈為單一執行檔(例如 Windows x64)
+dotnet publish .\ReplaceText\ReplaceText.csproj -c Release -r win-x64 -p:PublishSingleFile=true -o .\ReplaceText\publish
+
+# 執行發佈後的可執行檔
+.\ReplaceText\publish\ReplaceText.exe C:\MyProject
+```
+
+解除安裝：
+
+```powershell
+# 全域解除安裝
+dotnet tool uninstall --global ReplaceText
+
+# local tool 解除安裝(在專案資料夾執行)
+dotnet tool uninstall ReplaceText --local
 ```
 
 ### 方式 3：使用發行版本
