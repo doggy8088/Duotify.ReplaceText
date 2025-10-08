@@ -19,5 +19,4 @@
 ## or put your custom commands -------------------
 #echo 'Husky.Net is awesome!'
 
-dotnet format
-git add -u
+dotnet husky run
