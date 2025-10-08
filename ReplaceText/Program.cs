@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Ignore;
 
 namespace ReplaceText
 {
@@ -14,6 +15,16 @@ namespace ReplaceText
             // 在 .NET Core/.NET 5+ 中，需要註冊編碼提供者以支援 Big5、GBK 等編碼
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
+
+        /// <summary>
+        /// .gitignore 規則引擎 (若找到 .gitignore 則初始化)
+        /// </summary>
+        private static Ignore.Ignore? gitignoreRules = null;
+
+        /// <summary>
+        /// .gitignore 檔案所在的根目錄
+        /// </summary>
+        private static string? gitignoreRootPath = null;
 
         // 中央化副檔名清單，使用 HashSet 提升查詢與維護性
         private static readonly HashSet<string> CodeExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -182,6 +193,18 @@ namespace ReplaceText
 
             if (isDir)
             {
+                // 嘗試尋找並載入 .gitignore 檔案
+                string? gitignorePath = FindGitignoreFile(path);
+                if (gitignorePath != null)
+                {
+                    LoadGitignoreRules(gitignorePath);
+                }
+                else
+                {
+                    Console.WriteLine("未找到 .gitignore 檔案,將處理所有符合條件的檔案");
+                    Console.WriteLine();
+                }
+
                 // 使用 EnumerateFiles 並以 extension 交叉比對，確保掃描與 IsIgnored / IsBinary 的判斷使用同一份清單
                 // 若啟用 /MO (僅修改指定文字檔案)，掃描清單僅包含 TextExtensions
                 var allowedExts = bModifyTextFileOnly
@@ -199,6 +222,16 @@ namespace ReplaceText
 
                 foreach (string filePath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
                 {
+                    // 先檢查是否被 .gitignore 忽略
+                    if (IsIgnoredByGitignore(filePath))
+                    {
+                        if (bVerbose)
+                        {
+                            Console.WriteLine($"已忽略 (gitignore): {StripCurrentPath(filePath)}");
+                        }
+                        continue;
+                    }
+
                     string ext = Path.GetExtension(filePath);
 
                     if (string.IsNullOrEmpty(ext))
@@ -264,6 +297,20 @@ namespace ReplaceText
             }
             else
             {
+                // 單一檔案情況,先嘗試載入 .gitignore
+                string? gitignorePath = FindGitignoreFile(Path.GetDirectoryName(path) ?? Environment.CurrentDirectory);
+                if (gitignorePath != null)
+                {
+                    LoadGitignoreRules(gitignorePath);
+                }
+
+                // 檢查單一檔案是否被 .gitignore 忽略
+                if (IsIgnoredByGitignore(path))
+                {
+                    Console.WriteLine($"檔案被 .gitignore 規則忽略: {StripCurrentPath(path)}");
+                    return;
+                }
+
                 // 單一檔案情況, 傳入進度資訊 (1/1)
                 char result = ProcessFile(path, oldValue, newValue, 1, 1);
 
@@ -290,6 +337,102 @@ namespace ReplaceText
             Console.WriteLine("/GBK\t讓 GBK (GB18030) 字集優先於 Big5 判斷");
             Console.WriteLine("/U\t自動判斷未知檔案類型 (預設僅處理已知的檔案類型)");
             Console.WriteLine();
+            Console.WriteLine("程式會自動尋找目前目錄或上層目錄的 .gitignore 檔案,並套用忽略規則。");
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// 尋找當前目錄或上層目錄的 .gitignore 檔案
+        /// </summary>
+        /// <param name="startPath">起始搜尋路徑</param>
+        /// <returns>找到的 .gitignore 檔案路徑,若未找到則返回 null</returns>
+        private static string? FindGitignoreFile(string startPath)
+        {
+            DirectoryInfo? currentDir = new DirectoryInfo(startPath);
+
+            while (currentDir != null)
+            {
+                string gitignorePath = Path.Combine(currentDir.FullName, ".gitignore");
+                if (File.Exists(gitignorePath))
+                {
+                    return gitignorePath;
+                }
+
+                currentDir = currentDir.Parent;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 載入 .gitignore 規則
+        /// </summary>
+        /// <param name="gitignorePath">.gitignore 檔案路徑</param>
+        private static void LoadGitignoreRules(string gitignorePath)
+        {
+            try
+            {
+                gitignoreRootPath = Path.GetDirectoryName(gitignorePath);
+                if (string.IsNullOrEmpty(gitignoreRootPath))
+                {
+                    Console.WriteLine("警告: 無法取得 .gitignore 檔案的目錄路徑");
+                    return;
+                }
+
+                gitignoreRules = new Ignore.Ignore();
+
+                // 讀取 .gitignore 內容並加入規則
+                string[] lines = File.ReadAllLines(gitignorePath);
+                foreach (string line in lines)
+                {
+                    string trimmedLine = line.Trim();
+                    // 跳過空行和註解
+                    if (!string.IsNullOrWhiteSpace(trimmedLine) && !trimmedLine.StartsWith("#"))
+                    {
+                        gitignoreRules.Add(trimmedLine);
+                    }
+                }
+
+                Console.WriteLine($"已載入 .gitignore 規則: {gitignorePath}");
+                Console.WriteLine($"共載入 {lines.Count(l => !string.IsNullOrWhiteSpace(l) && !l.Trim().StartsWith("#"))} 條規則");
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"警告: 無法載入 .gitignore 檔案 ({ex.Message})");
+                gitignoreRules = null;
+                gitignoreRootPath = null;
+            }
+        }
+
+        /// <summary>
+        /// 檢查檔案是否被 .gitignore 規則忽略
+        /// </summary>
+        /// <param name="filePath">檔案完整路徑</param>
+        /// <returns>如果應該被忽略則返回 true</returns>
+        private static bool IsIgnoredByGitignore(string filePath)
+        {
+            if (gitignoreRules == null || string.IsNullOrEmpty(gitignoreRootPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                // 取得相對於 .gitignore 根目錄的相對路徑
+                string relativePath = Path.GetRelativePath(gitignoreRootPath, filePath);
+
+                // 將 Windows 路徑分隔符號轉換為 Unix 格式 (Git 使用 /)
+                relativePath = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+
+                // 使用 Ignore 函式庫檢查是否應該忽略
+                return gitignoreRules.IsIgnored(relativePath);
+            }
+            catch
+            {
+                // 若無法判斷,預設不忽略
+                return false;
+            }
         }
 
         /// <summary>
