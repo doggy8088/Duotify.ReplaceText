@@ -1,20 +1,22 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplaceText", "ReplaceText\ReplaceText.csproj", "{4B6BAE66-9772-472E-B488-6A399563305D}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplaceText", "ReplaceText\ReplaceText.csproj", "{7FD0D72D-395F-4292-8877-2D02F8126D02}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4B6BAE66-9772-472E-B488-6A399563305D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B6BAE66-9772-472E-B488-6A399563305D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B6BAE66-9772-472E-B488-6A399563305D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B6BAE66-9772-472E-B488-6A399563305D}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7FD0D72D-395F-4292-8877-2D02F8126D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FD0D72D-395F-4292-8877-2D02F8126D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FD0D72D-395F-4292-8877-2D02F8126D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FD0D72D-395F-4292-8877-2D02F8126D02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
