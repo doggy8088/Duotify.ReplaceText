@@ -15,7 +15,7 @@ jobs:
   publish:
     name: Build and Publish to NuGet
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 📥 Checkout 程式碼
       uses: actions/checkout@v4
@@ -91,24 +91,24 @@ jobs:
           ## 🎉 ReplaceText ${{ steps.get_version.outputs.VERSION }} 已發佈！
 
           ### 安裝方式
-          
+
           ```bash
           dotnet tool install --global ReplaceText
           ```
 
           ### 更新方式
-          
+
           ```bash
           dotnet tool update --global ReplaceText
           ```
 
           ### 📦 套件連結
-          
+
           - [NuGet Gallery](https://www.nuget.org/packages/ReplaceText/${{ steps.get_version.outputs.VERSION }})
           - [安裝指南](https://github.com/doggy8088/ReplaceText/blob/main/INSTALL.md)
-          
+
           ### 📚 說明文件
-          
+
           完整說明文件請參閱 [README.md](https://github.com/doggy8088/ReplaceText/blob/main/README.md)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

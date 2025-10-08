@@ -112,6 +112,7 @@ ReplaceText.exe [選項] <目錄|檔案> [舊字串] [新字串]
 - `/V` - 顯示詳細輸出模式，會顯示所有掃描的檔案清單
 - `/F` - 顯示完整的檔案路徑（預設僅顯示相對路徑）
 - `/GBK` - 讓 GBK (GB18030) 字集優先於 Big5 判斷
+- `/U` - 自動判斷未知檔案類型，嘗試以文字方式處理沒有副檔名或非典型副檔名的檔案（若非文字檔則會跳過）
 
 ### 使用範例
 
@@ -143,6 +144,14 @@ ReplaceText.exe /V /F C:\MyProject
 
 ```bash
 ReplaceText.exe /GBK C:\MyProject
+```
+
+#### 6. 自動判斷未知檔案類型（/U）
+
+當目錄中存在沒有副檔名或副檔名不常見的檔案時，使用 `/U` 可以讓工具嘗試以文字方式判斷並處理這些檔案（若判定為二進位檔案則會跳過）：
+
+```bash
+ReplaceText.exe /U C:\MyProject
 ```
 
 ## 支援的檔案格式
@@ -196,7 +205,11 @@ dotnet format --verify-no-changes
 
 ## 授權
 
-Copyright © Microsoft 2010
+MIT License
+
+Copyright (c) 2010-2025 Will 保哥 (doggy8088)
+
+完整授權條款請參閱 [LICENSE](LICENSE)
 
 ## 升級記錄
 

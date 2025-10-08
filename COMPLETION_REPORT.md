@@ -296,6 +296,6 @@ ReplaceText.exe /T /M /V /F /GBK /U <Directory|File>
 
 ---
 
-**報告產生時間**: 2025-10-08  
-**專案狀態**: ✅ 準備就緒，可以發佈到 NuGet.org  
+**報告產生時間**: 2025-10-08
+**專案狀態**: ✅ 準備就緒，可以發佈到 NuGet.org
 **建議下一步**: 設定 NuGet API Key 並推送版本標籤以觸發自動發佈
