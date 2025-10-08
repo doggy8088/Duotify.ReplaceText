@@ -85,19 +85,19 @@ jobs:
       run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
 
     - name: Publish for Windows x64
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x64 --self-contained -p:DebugType=embedded -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x64
 
     - name: Publish for Windows x86
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x86 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x86
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x86 --self-contained -p:DebugType=embedded -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x86
 
     - name: Publish for Linux x64
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/linux-x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r linux-x64 --self-contained -p:DebugType=embedded -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/linux-x64
 
     - name: Publish for macOS x64
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-x64 --self-contained -p:DebugType=embedded -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-x64
 
     - name: Publish for macOS ARM64
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-arm64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-arm64 --self-contained -p:DebugType=embedded -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-arm64
 
     - name: 建立 ZIP 壓縮檔
       run: |
