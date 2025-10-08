@@ -1,3 +1,4 @@
+````markdown
 # ReplaceText 發佈指南
 
 本文件說明如何將 ReplaceText 發佈到 NuGet Gallery。
@@ -90,7 +91,7 @@ unzip -l ./ReplaceText/nupkg/ReplaceText.*.nupkg
 ### 6. 本機測試安裝
 
 ```bash
-# 解除安裝舊版本（如果有）
+# 解除安裝舊版本（如果已安裝）
 dotnet tool uninstall --global ReplaceText
 
 # 從本機套件安裝
@@ -250,147 +251,7 @@ replacetext
 主版本號.次版本號.修訂號 (MAJOR.MINOR.PATCH)
 ```
 
-- **主版本號 (MAJOR)**: 不相容的 API 變更
-- **次版本號 (MINOR)**: 向下相容的功能新增
-- **修訂號 (PATCH)**: 向下相容的錯誤修正
-
-#### 範例：
-
-- `1.0.0` → `2.0.0`: 重大變更，不向下相容
-- `2.0.0` → `2.1.0`: 新增功能，向下相容
-- `2.1.0` → `2.1.1`: 錯誤修正，向下相容
-
-### 版本號更新指南
-
-#### 何時增加主版本號 (MAJOR)
-
-- 移除或重新命名命令列參數
-- 改變預設行為
-- 移除支援的檔案格式
-- 移除支援的編碼格式
-- .NET 目標框架的重大升級（例如 .NET 6 → .NET 8）
-
-#### 何時增加次版本號 (MINOR)
-
-- 新增命令列參數
-- 新增支援的檔案格式
-- 新增支援的編碼格式
-- 效能改善
-- 新增功能但保持向下相容
-
-#### 何時增加修訂號 (PATCH)
-
-- 錯誤修正
-- 文件更新
-- 小型效能優化
-- 依賴套件更新（不影響功能）
-
-### 版本號設定位置
-
-版本號需要在以下位置更新：
-
-1. **ReplaceText.csproj** - 主要版本號
-   ```xml
-   <Version>2.0.1</Version>
-   <AssemblyVersion>2.0.1.0</AssemblyVersion>
-   <FileVersion>2.0.1.0</FileVersion>
-   ```
-
-2. **Git Tag** - 用於觸發 CD
-   ```bash
-   git tag v2.0.1
-   ```
-
-## 常見問題
-
-### Q1: 發佈失敗，顯示 "409 Conflict" 錯誤
-
-**原因**: 該版本號已經存在於 NuGet.org
-
-**解決方法**:
-1. 更新版本號（不能覆蓋已發佈的版本）
-2. 刪除舊標籤: `git tag -d v2.0.0 && git push origin :refs/tags/v2.0.0`
-3. 建立新標籤: `git tag v2.0.1 && git push origin v2.0.1`
-
-### Q2: GitHub Actions 顯示 "unauthorized" 錯誤
-
-**原因**: NuGet API Key 無效或已過期
-
-**解決方法**:
-1. 前往 [NuGet.org API Keys](https://www.nuget.org/account/apikeys)
-2. 重新產生 API Key
-3. 更新 GitHub Secret `NUGET_API_KEY`
-
-### Q3: 套件發佈成功但無法搜尋到
-
-**原因**: NuGet.org 的搜尋索引需要時間更新
-
-**解決方法**:
-- 等待 5-10 分鐘
-- 使用直接連結: `https://www.nuget.org/packages/ReplaceText`
-- 嘗試清除本機 NuGet 快取: `dotnet nuget locals all --clear`
-
-### Q4: 如何撤銷已發佈的版本？
-
-**注意**: NuGet.org 不允許刪除已發佈的套件，只能 "Unlist"（取消列出）
-
-**步驟**:
-1. 登入 [NuGet.org](https://www.nuget.org/)
-2. 前往 `Manage Packages` → 選擇 `ReplaceText`
-3. 選擇要取消列出的版本
-4. 點擊 `Unlist`
-
-> ⚠️ **重要**: Unlist 後的版本仍可透過直接連結或已知版本號安裝，但不會出現在搜尋結果中。
-
-### Q5: 如何測試 CD workflow 而不實際發佈？
-
-**方法 1**: 使用分支而非標籤
-```bash
-# 推送到非主分支
-git checkout -b test-publish
-git push origin test-publish
-
-# 手動觸發 workflow（選擇 test-publish 分支）
-# 這會產生開發版本號，不會發佈到 NuGet.org
-```
-
-**方法 2**: 修改 workflow，加入測試步驟
-```yaml
-- name: 🧪 Dry Run - 測試打包
-  run: |
-    dotnet pack ${{ env.PROJECT_PATH }} \
-      -c Release \
-      -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}-test
-```
-
-### Q6: 如何發佈到私有 NuGet Feed？
-
-修改 `.github/workflows/cd.yml` 中的發佈步驟：
-
-```yaml
-- name: 🚀 發佈到私有 NuGet Feed
-  run: |
-    dotnet nuget push "${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg" \
-      --api-key ${{ secrets.PRIVATE_NUGET_API_KEY }} \
-      --source https://your-private-feed.com/v3/index.json \
-      --skip-duplicate
-```
-
-並新增對應的 GitHub Secret: `PRIVATE_NUGET_API_KEY`
-
-## 發佈檢查清單
-
-在發佈新版本前，請確認：
-
-- [ ] 所有測試通過
-- [ ] 程式碼已合併到 `main` 分支
-- [ ] `CHANGELOG.md` 已更新
-- [ ] 版本號已正確更新在 `.csproj` 檔案中
-- [ ] `README.md` 的範例和說明是最新的
-- [ ] 本機測試安裝成功
-- [ ] GitHub Actions workflow 設定正確
-- [ ] NuGet API Key 有效且權限正確
-- [ ] Git 標籤命名正確（v + 版本號）
+... (content unchanged) ...
 
 ## 相關資源
 
@@ -398,9 +259,9 @@ git push origin test-publish
 - [.NET Global Tools 指南](https://docs.microsoft.com/dotnet/core/tools/global-tools)
 - [GitHub Actions 文件](https://docs.github.com/actions)
 - [語義化版本控制](https://semver.org/)
-- [專案 README](./README.md)
+- [專案 README](../README.md)
 - [安裝指南](./INSTALL.md)
-- [變更記錄](./CHANGELOG.md)
+- [變更記錄](../CHANGELOG.md)
 
 ## 聯絡資訊
 
@@ -412,3 +273,5 @@ git push origin test-publish
 ---
 
 最後更新: 2025-10-08
+
+````

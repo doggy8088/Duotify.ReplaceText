@@ -21,7 +21,7 @@ replacetext /path/to/your/project
 # 3. 完成！
 ```
 
-📖 **更多使用方式請參閱 [安裝指南](INSTALL.md)**
+📖 **更多使用方式請參閱 [安裝指南](docs/INSTALL.md)**
 
 ## 功能特點
 
@@ -65,7 +65,7 @@ dotnet tool update --global Duotify.ReplaceText
 dotnet tool uninstall --global Duotify.ReplaceText
 ```
 
-📖 **詳細安裝說明請參閱 [INSTALL.md](INSTALL.md)**
+📖 **詳細安裝說明請參閱 [INSTALL.md](docs/INSTALL.md)**
 
 ### 方式 2：從原始碼建構 (在本機安裝)
 

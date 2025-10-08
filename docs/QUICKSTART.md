@@ -1,3 +1,4 @@
+````markdown
 # 快速開始指南
 
 ## 安裝與設定
@@ -175,13 +176,15 @@ dotnet run --project ReplaceText -- /T C:\MyProject
 
 ## 更多資源
 
-- [完整文件](README.md)
+- [完整文件](../README.md)
 - [貢獻指南](CONTRIBUTING.md)
-- [變更記錄](CHANGELOG.md)
+- [變更記錄](../CHANGELOG.md)
 - [升級摘要](UPGRADE_SUMMARY.md)
 
 ## 需要協助？
 
 - 提交 [Issue](https://github.com/doggy8088/ReplaceText/issues)
-- 查看 [文件](README.md)
+- 查看 [文件](../README.md)
 - 聯繫維護者
+
+````

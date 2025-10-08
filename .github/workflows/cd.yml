@@ -105,7 +105,7 @@ jobs:
           ### 📦 套件連結
 
           - [NuGet Gallery](https://www.nuget.org/packages/Duotify.ReplaceText/${{ steps.get_version.outputs.VERSION }})
-          - [安裝指南](https://github.com/doggy8088/ReplaceText/blob/main/INSTALL.md)
+          - [安裝指南](https://github.com/doggy8088/ReplaceText/blob/main/docs/INSTALL.md)
 
           ### 📚 說明文件
 

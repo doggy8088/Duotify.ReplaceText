@@ -1,3 +1,4 @@
+````markdown
 # 套件更名說明
 
 ## 📦 套件名稱變更
@@ -93,8 +94,8 @@ replacetext /path/to/project
 
 - [NuGet Gallery - Duotify.ReplaceText](https://www.nuget.org/packages/Duotify.ReplaceText/)
 - [GitHub Repository](https://github.com/doggy8088/ReplaceText)
-- [安裝指南](INSTALL.md)
-- [更新日誌](CHANGELOG.md)
+- [安裝指南](./INSTALL.md)
+- [更新日誌](../CHANGELOG.md)
 
 ## ⚠️ 注意事項
 
@@ -110,3 +111,5 @@ replacetext /path/to/project
 ---
 
 **更新日期**: 2025-10-08
+
+````
