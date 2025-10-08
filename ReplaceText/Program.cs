@@ -120,7 +120,7 @@ namespace ReplaceText
             {
                 List<string> files = new List<string>();
 
-                string valid_file_exts = "*.sln *.cs *.js *.vb *.vbs *.jsl *.xsd *.settings *.htm *.html *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd *.rdlc *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asax *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl *.edmx *.dbml";
+                string valid_file_exts = "*.sln *.cs *.js *.vb *.vbs *.jsl *.xsd *.settings *.htm *.html *.cshtml *.vbhtml *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd *.rdlc *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asax *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl *.edmx *.dbml";
 
                 if (bModifyTextFile)
                 {
@@ -356,7 +356,7 @@ namespace ReplaceText
                             File.WriteAllText(filePath, newContent, Encoding.UTF8);
                         }
 
-                        ConsoleWriteWithColor("done", ConsoleColor.Green);
+                        ConsoleWriteLineWithColor("done", ConsoleColor.Green);
                     }
                     else if (encoding == "BIG5")
                     {
