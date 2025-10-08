@@ -2,8 +2,8 @@ name: CD - Publish to NuGet
 
 on:
   push:
-    tags:
-      - 'v*'  # 當推送 v 開頭的標籤時觸發 (例如: v2.0.0, v2.1.0)
+    branches:
+      - main # 當 main 分支有新 commit 時觸發
   workflow_dispatch:  # 允許手動觸發
 
 env:
@@ -30,9 +30,15 @@ jobs:
     - name: 📝 取得版本號
       id: get_version
       run: |
-        if [[ $GITHUB_REF == refs/tags/v* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/v}
+        # For pushes to main or when manually triggered, read <Version> from the csproj
+        if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" || "$GITHUB_REF" == "refs/heads/main" ]]; then
+          VERSION=$(grep -Po '(?<=<Version>).*?(?=</Version>)' "$PROJECT_PATH" || true)
+          if [ -z "$VERSION" ]; then
+            echo "❌ 無法從 $PROJECT_PATH 取得 <Version>，請在 csproj 中設定 <Version>。" >&2
+            exit 1
+          fi
         else
+          # Fallback developer build version for other refs
           VERSION="1.0.0-dev.${{ github.run_number }}"
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
@@ -41,10 +47,35 @@ jobs:
     - name: 🔨 還原相依套件
       run: dotnet restore ${{ env.PROJECT_PATH }}
 
+    - name: 🔎 檢查 NuGet 是否已存在此版本
+      id: check_nuget
+      run: |
+        PACKAGE_ID="Duotify.ReplaceText"
+        PACKAGE_ID_LOWER=$(echo "$PACKAGE_ID" | tr '[:upper:]' '[:lower:]')
+        INDEX_URL="https://api.nuget.org/v3-flatcontainer/${PACKAGE_ID_LOWER}/index.json"
+        echo "查詢 NuGet: $INDEX_URL"
+        RESP=$(curl -sS "$INDEX_URL" || true)
+        if [ -z "$RESP" ]; then
+          # 如果找不到 index.json，代表此套件 ID 尚未上傳過
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "🔔 NuGet 上找不到套件 $PACKAGE_ID，將會發佈新版本。"
+          exit 0
+        fi
+        # 檢查版本是否在版本清單中
+        if echo "$RESP" | grep -q "\"${{ steps.get_version.outputs.VERSION }}\""; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "ℹ️ 版本 ${{ steps.get_version.outputs.VERSION }} 已存在於 NuGet Gallery。將跳過發佈與建立 Release。"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "🔔 版本 ${{ steps.get_version.outputs.VERSION }} 不在 NuGet Gallery，將發佈新版並建立 Release。"
+        fi
+
     - name: 🏗️ 建構專案
       run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
 
-    - name: 📦 打包 NuGet 套件
+    - name: 📦 打包 NuGet 套件 (僅在 NuGet 尚未有此版本時執行)
+      id: pack
+      if: steps.check_nuget.outputs.exists == 'false'
       run: |
         dotnet pack ${{ env.PROJECT_PATH }} \
           -c Release \
@@ -52,13 +83,18 @@ jobs:
           --no-restore \
           -o ${{ env.PACKAGE_OUTPUT_DIR }} \
           -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+        # 記錄產生的 nupkg 路徑，供後續 push 與上傳到 Release 使用
+        NUPKG_PATH=$(ls ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg | head -n1)
+        echo "NUPKG_PATH=$NUPKG_PATH" >> $GITHUB_OUTPUT
 
-    - name: 📋 列出套件內容
+    - name: 📋 列出套件內容 (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
       run: |
         echo "🔍 已產生的 NuGet 套件："
         ls -lh ${{ env.PACKAGE_OUTPUT_DIR }}
 
-    - name: ✅ 驗證套件內容
+    - name: ✅ 驗證套件內容 (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
       run: |
         echo "🔍 驗證 NuGet 套件內容..."
         for nupkg in ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg; do
@@ -66,27 +102,32 @@ jobs:
           unzip -l "$nupkg" | grep -E '\.(dll|exe|pdb)$' || true
         done
 
-    - name: 🚀 發佈到 NuGet.org
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: 🚀 發佈到 NuGet.org (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
       run: |
-        dotnet nuget push "${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg" \
+        echo "準備將套件推送到 NuGet.org：${{ steps.pack.outputs.NUPKG_PATH }}"
+        dotnet nuget push "${{ steps.pack.outputs.NUPKG_PATH }}" \
           --api-key ${{ secrets.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
 
-    - name: 📤 上傳套件作為 Artifacts
+    - name: 📤 上傳套件作為 Artifacts (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
       uses: actions/upload-artifact@v4
       with:
         name: nuget-package-${{ steps.get_version.outputs.VERSION }}
-        path: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
-        retention-days: 90
+        path: ${{ steps.pack.outputs.NUPKG_PATH }}
+        retention-days: 30
 
-    - name: 📝 建立 GitHub Release
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
+    - name: 📝 建立 GitHub Release (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
-        generate_release_notes: true
+        tag_name: v${{ steps.get_version.outputs.VERSION }}
+        release_name: Duotify.ReplaceText ${{ steps.get_version.outputs.VERSION }}
         body: |
           ## 🎉 Duotify.ReplaceText ${{ steps.get_version.outputs.VERSION }} 已發佈！
 
@@ -110,11 +151,23 @@ jobs:
           ### 📚 說明文件
 
           完整說明文件請參閱 [README.md](https://github.com/doggy8088/ReplaceText/blob/main/README.md)
+        draft: false
+        prerelease: false
+        target_commitish: ${{ github.sha }}
+
+    - name: 📦 將 nupkg 上傳到 Release (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
+      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.pack.outputs.NUPKG_PATH }}
+        asset_name: Duotify.ReplaceText-${{ steps.get_version.outputs.VERSION }}.nupkg
+        asset_content_type: application/octet-stream
 
-    - name: ✅ 發佈完成
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: ✅ 發佈完成 (僅在 NuGet 尚未有此版本時執行)
+      if: steps.check_nuget.outputs.exists == 'false'
       run: |
         echo "✅ 套件已成功發佈到 NuGet.org"
         echo "📦 版本: ${{ steps.get_version.outputs.VERSION }}"
