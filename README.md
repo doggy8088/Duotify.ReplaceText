@@ -25,11 +25,11 @@ replacetext /path/to/your/project
 
 ## 功能特點
 
-- 🔄 自動偵測並轉換多種編碼格式（UTF-8、Unicode、Big5、GBK、ISO-8859-1）
+- 🔄 自動偵測並轉換多種編碼格式 (UTF-8、Unicode、Big5、GBK、ISO-8859-1)
 - 🔍 遞迴掃描目錄中的所有支援檔案
 - ✏️ 批次字串替換功能
-- 🎯 支援多種開發相關檔案格式（.cs, .js, .html, .config 等）
-- 🧪 測試模式（Dry Run）可在不修改檔案的情況下預覽變更
+- 🎯 支援多種開發相關檔案格式 (.cs, .js, .html, .config 等)
+- 🧪 測試模式 (Dry Run) 可在不修改檔案的情況下預覽變更
 - 📊 詳細的輸出選項以追蹤處理進度
 
 ## 系統需求
@@ -38,7 +38,7 @@ replacetext /path/to/your/project
 
 ## 安裝
 
-### 方式 1：安裝為 .NET Global Tool（推薦）
+### 方式 1：安裝為 .NET Global Tool (推薦)
 
 需要 [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高版本。
 
@@ -80,13 +80,13 @@ dotnet build -c Release
 
 ## 使用方法
 
-### 作為 Global Tool 使用（推薦）
+### 作為 Global Tool 使用 (推薦)
 
 ```bash
 # 轉換目錄中所有檔案為 UTF-8
 replacetext /path/to/your/project
 
-# 測試模式（不實際修改檔案）
+# 測試模式(不實際修改檔案)
 replacetext /T /path/to/your/project
 
 # 替換字串並轉換編碼
@@ -95,7 +95,7 @@ replacetext /path/to/your/project "oldText" "newText"
 # 詳細輸出模式
 replacetext /V /F /path/to/your/project
 
-# GBK 優先模式（處理簡體中文）
+# GBK 優先模式(處理簡體中文)
 replacetext /GBK /path/to/your/project
 ```
 
@@ -108,11 +108,11 @@ ReplaceText.exe [選項] <目錄|檔案> [舊字串] [新字串]
 ### 選項
 
 - `/T` - 測試執行模式，不會寫入檔案 (Dry Run)
-- `/M` - 修改已知的文字檔案（預設會跳過 .txt 和 .csv 檔案）
+- `/M` - 修改已知的文字檔案 (預設會跳過 .txt 和 .csv 檔案)
 - `/V` - 顯示詳細輸出模式，會顯示所有掃描的檔案清單
-- `/F` - 顯示完整的檔案路徑（預設僅顯示相對路徑）
+- `/F` - 顯示完整的檔案路徑 (預設僅顯示相對路徑)
 - `/GBK` - 讓 GBK (GB18030) 字集優先於 Big5 判斷
-- `/U` - 自動判斷未知檔案類型，嘗試以文字方式處理沒有副檔名或非典型副檔名的檔案（若非文字檔則會跳過）
+- `/U` - 自動判斷未知檔案類型，嘗試以文字方式處理沒有副檔名或非典型副檔名的檔案 (若非文字檔則會跳過)
 
 ### 使用範例
 
@@ -146,9 +146,9 @@ ReplaceText.exe /V /F C:\MyProject
 ReplaceText.exe /GBK C:\MyProject
 ```
 
-#### 6. 自動判斷未知檔案類型（/U）
+#### 6. 自動判斷未知檔案類型 (/U)
 
-當目錄中存在沒有副檔名或副檔名不常見的檔案時，使用 `/U` 可以讓工具嘗試以文字方式判斷並處理這些檔案（若判定為二進位檔案則會跳過）：
+當目錄中存在沒有副檔名或副檔名不常見的檔案時，使用 `/U` 可以讓工具嘗試以文字方式判斷並處理這些檔案 (若判定為二進位檔案則會跳過)：
 
 ```bash
 ReplaceText.exe /U C:\MyProject
@@ -166,6 +166,7 @@ ReplaceText.exe /U C:\MyProject
 - **其他**: .settings, .cd, .wsf, .sitemap, .skin, .browser, .disco, .wsdl, .discomap, .webinfo
 
 使用 `/M` 選項可額外處理：
+
 - .txt
 - .csv
 
@@ -199,7 +200,7 @@ dotnet format --verify-no-changes
 
 本專案使用 GitHub Actions 進行持續整合和部署：
 
-- ✅ 自動建構（Windows、Linux、macOS）
+- ✅ 自動建構 (Windows、Linux、macOS)
 - ✅ 程式碼格式檢查
 - ✅ 自動發布多平台二進位檔案
 
@@ -214,11 +215,12 @@ Copyright (c) 2010-2025 Will 保哥 (doggy8088)
 ## 升級記錄
 
 ### v2.0.0 (2025)
+
 - ✨ 升級至 .NET 8.0
-- 🔧 現代化專案結構（SDK 風格的 .csproj）
+- 🔧 現代化專案結構 (SDK 風格的 .csproj)
 - 🤖 新增 GitHub Actions CI/CD
 - 📝 新增 .editorconfig 以確保程式碼品質
-- 🎯 支援多平台發布（Windows、Linux、macOS）
+- 🎯 支援多平台發布 (Windows、Linux、macOS)
 - 🐛 修正所有編譯警告
 - 📦 支援單一檔案發布
 
