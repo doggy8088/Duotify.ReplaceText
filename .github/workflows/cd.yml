@@ -1,0 +1,121 @@
+name: CD - Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'  # 當推送 v 開頭的標籤時觸發 (例如: v2.0.0, v2.1.0)
+  workflow_dispatch:  # 允許手動觸發
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: 'ReplaceText/ReplaceText.csproj'
+  PACKAGE_OUTPUT_DIR: 'ReplaceText/nupkg'
+
+jobs:
+  publish:
+    name: Build and Publish to NuGet
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout 程式碼
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 完整的 Git 歷史記錄，用於版本號生成
+
+    - name: 🔧 設定 .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 📝 取得版本號
+      id: get_version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION="1.0.0-dev.${{ github.run_number }}"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 版本號: $VERSION"
+
+    - name: 🔨 還原相依套件
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: 🏗️ 建構專案
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+
+    - name: 📦 打包 NuGet 套件
+      run: |
+        dotnet pack ${{ env.PROJECT_PATH }} \
+          -c Release \
+          --no-build \
+          --no-restore \
+          -o ${{ env.PACKAGE_OUTPUT_DIR }} \
+          -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+
+    - name: 📋 列出套件內容
+      run: |
+        echo "🔍 已產生的 NuGet 套件："
+        ls -lh ${{ env.PACKAGE_OUTPUT_DIR }}
+
+    - name: ✅ 驗證套件內容
+      run: |
+        echo "🔍 驗證 NuGet 套件內容..."
+        for nupkg in ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg; do
+          echo "📦 套件: $(basename $nupkg)"
+          unzip -l "$nupkg" | grep -E '\.(dll|exe|pdb)$' || true
+        done
+
+    - name: 🚀 發佈到 NuGet.org
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        dotnet nuget push "${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg" \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+    - name: 📤 上傳套件作為 Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package-${{ steps.get_version.outputs.VERSION }}
+        path: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
+        retention-days: 90
+
+    - name: 📝 建立 GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
+        generate_release_notes: true
+        body: |
+          ## 🎉 ReplaceText ${{ steps.get_version.outputs.VERSION }} 已發佈！
+
+          ### 安裝方式
+          
+          ```bash
+          dotnet tool install --global ReplaceText
+          ```
+
+          ### 更新方式
+          
+          ```bash
+          dotnet tool update --global ReplaceText
+          ```
+
+          ### 📦 套件連結
+          
+          - [NuGet Gallery](https://www.nuget.org/packages/ReplaceText/${{ steps.get_version.outputs.VERSION }})
+          - [安裝指南](https://github.com/doggy8088/ReplaceText/blob/main/INSTALL.md)
+          
+          ### 📚 說明文件
+          
+          完整說明文件請參閱 [README.md](https://github.com/doggy8088/ReplaceText/blob/main/README.md)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: ✅ 發佈完成
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        echo "✅ 套件已成功發佈到 NuGet.org"
+        echo "📦 版本: ${{ steps.get_version.outputs.VERSION }}"
+        echo "🔗 套件連結: https://www.nuget.org/packages/ReplaceText/${{ steps.get_version.outputs.VERSION }}"

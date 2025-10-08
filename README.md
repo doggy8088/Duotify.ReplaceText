@@ -1,6 +1,27 @@
 # ReplaceText
 
+[![NuGet](https://img.shields.io/nuget/v/ReplaceText.svg)](https://www.nuget.org/packages/ReplaceText/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ReplaceText.svg)](https://www.nuget.org/packages/ReplaceText/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 一個強大的文字編碼轉換與字串替換工具，專為處理多種編碼格式的文字檔案而設計。
+
+現在可作為 .NET Global Tool 安裝，讓您在任何地方使用 `replacetext` 命令！
+
+## 🚀 快速開始
+
+```bash
+# 1. 安裝工具
+dotnet tool install --global ReplaceText
+
+# 2. 轉換專案中的所有檔案為 UTF-8
+replacetext /path/to/your/project
+
+# 3. 完成！
+```
+
+📖 **更多使用方式請參閱 [安裝指南](INSTALL.md)**
 
 ## 功能特點
 
@@ -17,7 +38,35 @@
 
 ## 安裝
 
-### 從原始碼建構
+### 方式 1：安裝為 .NET Global Tool（推薦）
+
+需要 [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高版本。
+
+```bash
+dotnet tool install --global ReplaceText
+```
+
+安裝後可在任何位置使用 `replacetext` 命令：
+
+```bash
+replacetext /path/to/your/project
+```
+
+更新工具：
+
+```bash
+dotnet tool update --global ReplaceText
+```
+
+解除安裝：
+
+```bash
+dotnet tool uninstall --global ReplaceText
+```
+
+📖 **詳細安裝說明請參閱 [INSTALL.md](INSTALL.md)**
+
+### 方式 2：從原始碼建構
 
 ```bash
 git clone https://github.com/doggy8088/ReplaceText.git
@@ -25,11 +74,32 @@ cd ReplaceText
 dotnet build -c Release
 ```
 
-### 使用發行版本
+### 方式 3：使用發行版本
 
 從 [Releases](https://github.com/doggy8088/ReplaceText/releases) 頁面下載適合您作業系統的版本。
 
 ## 使用方法
+
+### 作為 Global Tool 使用（推薦）
+
+```bash
+# 轉換目錄中所有檔案為 UTF-8
+replacetext /path/to/your/project
+
+# 測試模式（不實際修改檔案）
+replacetext /T /path/to/your/project
+
+# 替換字串並轉換編碼
+replacetext /path/to/your/project "oldText" "newText"
+
+# 詳細輸出模式
+replacetext /V /F /path/to/your/project
+
+# GBK 優先模式（處理簡體中文）
+replacetext /GBK /path/to/your/project
+```
+
+### 作為獨立執行檔使用
 
 ```
 ReplaceText.exe [選項] <目錄|檔案> [舊字串] [新字串]
