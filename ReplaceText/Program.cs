@@ -106,6 +106,7 @@ namespace ReplaceText
                     valid_file_exts += " *.txt *.csv";
                 }
 
+                int fileCount = 0;
                 foreach (var searchPattern in valid_file_exts.Split(' '))
                 {
                     foreach (string filePath in Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
@@ -156,17 +157,12 @@ namespace ReplaceText
                 string oldContent_UTF8_Only = GetAllUTF8Chars(filePath);
 
                 string oldContent_Unicode = File.ReadAllText(filePath, Encoding.Unicode);
-                //string oldContent_Unicode_Only = GetAllUnicodeChars(path);
-
-                // TODO: UTF-16 (BE) -- BOM: FE FF
-                // TODO: UTF-16 (LE) -- BOM: FF FE
-
-
 
                 #region ...  判斷 UTF-16 與 UTF-8 編碼  ...
 
                 int b1 = 0;
                 int b2 = 0;
+                int b3 = 0;
 
                 using (FileStream fs = File.OpenRead(filePath))
                 {
@@ -174,6 +170,7 @@ namespace ReplaceText
                     {
                         b1 = fs.ReadByte();
                         b2 = fs.ReadByte();
+                        b3 = fs.ReadByte();
                     }
                 }
 
@@ -198,7 +195,19 @@ namespace ReplaceText
 
                     encoding = "Unicode";
                 }
+                
+                // UTF-8 的 BOM 字元 ( EF BB BF )
+                // http://zh.wikipedia.org/zh-tw/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
+                if (b1 == 0xEF && b2 == 0xBB && b3 == 0xBF)
+                {
+                    is_valid_charset = true;
 
+                    oldContent = oldContent_UTF8;
+
+                    encoding = "UTF8";
+                }
+
+                // 判斷沒有 BOM 的 UTF-8 字元
                 if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
                 {
                     is_valid_charset = true;
@@ -369,7 +378,8 @@ namespace ReplaceText
         {
             // http://en.wikipedia.org/wiki/ISO/IEC_8859-1
 
-            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+            Regex rx = new Regex(@"[\x00]
+                                 | [\x09\x0A\x0D\x20-\x7E]            # ASCII
                                  | [\xA0-\xFF]                        # Western European (ISO-8859-1) range
                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
 
@@ -401,7 +411,8 @@ namespace ReplaceText
             // http://ash.jp/code/cn/big5tbl.htm
             // http://kura.hanazono.ac.jp/paper/codes.html
 
-            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+            Regex rx = new Regex(@"[\x00]
+                                 | [\x09\x0A\x0D\x20-\x7E]            # ASCII
                                  | [\xA1-\xFE][\x40-\x7E\xA1-\xFE]    # big5 range
                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
 
@@ -426,70 +437,21 @@ namespace ReplaceText
             return sb.ToString();
         }
 
-        private static string GetAllUnicodeChars(string path)
-        {
-            // From http://w3.org/International/questions/qa-forms-utf-8.html
-            // It will return true if $p_string is UTF-8, and false otherwise.
-
-            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
-                                  | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
-                                  |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
-                                  | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}  # straight 3-byte
-                                  |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
-                                  |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
-                                  | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
-                                  |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
-                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
-
-            StringBuilder sb = new StringBuilder();
-
-            string data = ReadAllChars(path);
-
-            foreach (Match mx in rx.Matches(data))
-            {
-                byte[] bb = new byte[mx.Value.Length];
-
-                for (int i = 0; i < mx.Value.Length; i++)
-                {
-                    bb[i] = (byte)mx.Value[i];
-                }
-
-                // UTF-16 (BE) 的 BOM 字元 ( FE FF )
-                // http://en.wikipedia.org/wiki/Byte-order_mark
-                if (bb[0] == 0xFE && bb[1] == 0xFF)
-                {
-                    continue;
-                }
-
-                // UTF-16 (LE) 的 BOM 字元 ( FF FE )
-                // http://en.wikipedia.org/wiki/Byte-order_mark
-                if (bb[0] == 0xFF && bb[1] == 0xFE)
-                {
-                    continue;
-                }
-
-                string a = Encoding.UTF8.GetString(bb);
-
-                sb.Append(a);
-            }
-
-            return sb.ToString();
-        }
-
         private static string GetAllUTF8Chars(string path)
         {
             // From http://w3.org/International/questions/qa-forms-utf-8.html
             // It will return true if $p_string is UTF-8, and false otherwise.
 
-            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
-                                  | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
-                                  |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
-                                  | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}  # straight 3-byte
-                                  |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
-                                  |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
-                                  | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
-                                  |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
-                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+            Regex rx = new Regex(@"[\x00]
+                                 | [\x09\x0A\x0D\x20-\x7E]            # ASCII
+                                 | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
+                                 |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
+                                 | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}  # straight 3-byte
+                                 |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
+                                 |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
+                                 | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+                                 |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
+                                 ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
 
             StringBuilder sb = new StringBuilder();
 
