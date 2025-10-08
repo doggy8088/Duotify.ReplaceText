@@ -75,6 +75,11 @@ namespace ReplaceText
         /// </summary>
         private static bool bGBKFirst = false;
 
+        /// <summary>
+        /// 是否自動判斷未知檔案類型 (預設僅處理已知的檔案類型)
+        /// </summary>
+        private static bool bUnknownFileType = false;
+
 
         private static void Main(string[] args)
         {
@@ -113,6 +118,12 @@ namespace ReplaceText
                 else if (item.ToUpper() == "/GBK" || item.ToLower() == "-gbk")
                 {
                     bGBKFirst = true;
+                    continue;
+                }
+                // 是否自動判斷未知檔案類型
+                else if (item.ToUpper() == "/U" || item.ToLower() == "-u")
+                {
+                    bUnknownFileType = true;
                     continue;
                 }
                 else
@@ -172,10 +183,22 @@ namespace ReplaceText
                     string ext = Path.GetExtension(filePath);
 
                     if (string.IsNullOrEmpty(ext))
+                    {
+                        // 無副檔名的檔案,若啟用 /U 參數則進行文字檔判斷
+                        if (bUnknownFileType && IsTextFile(filePath))
+                        {
+                            ProcessFile(filePath, oldValue, newValue);
+                        }
                         continue;
+                    }
 
                     if (allowedExts.Contains(ext))
                     {
+                        ProcessFile(filePath, oldValue, newValue);
+                    }
+                    else if (bUnknownFileType && !BinaryExtensions.Contains(ext) && IsTextFile(filePath))
+                    {
+                        // 啟用 /U 參數且不在二進位清單中,且通過文字檔判斷
                         ProcessFile(filePath, oldValue, newValue);
                     }
                 }
@@ -194,13 +217,14 @@ namespace ReplaceText
 
         private static void ShowHelp()
         {
-            Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK <Directory|File>");
+            Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK /U <Directory|File>");
             Console.WriteLine();
-            Console.WriteLine("/T\t測試執行模式，不會寫入檔案 (Dry Run)");
-            Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 2010 程式相關檔案)");
-            Console.WriteLine("/V\t顯示詳細輸出模式，會顯示所有掃描的檔案清單");
+            Console.WriteLine("/T\t測試執行模式,不會寫入檔案 (Dry Run)");
+            Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔,僅修改 Visual Studio 2010 程式相關檔案)");
+            Console.WriteLine("/V\t顯示詳細輸出模式,會顯示所有掃描的檔案清單");
             Console.WriteLine("/F\t顯示完整的檔案路徑(預設僅顯示相對路徑)");
             Console.WriteLine("/GBK\t讓 GBK (GB18030) 字集優先於 Big5 判斷");
+            Console.WriteLine("/U\t自動判斷未知檔案類型 (預設僅處理已知的檔案類型)");
             Console.WriteLine();
         }
 
@@ -701,7 +725,7 @@ namespace ReplaceText
         {
             if (path.ToLower().EndsWith(".bat")
                 || path.ToLower().Contains(@"\.svn\") || path.ToLower().Contains(@"\_svn\")
-                // 跳過一些 zh-cn 的檔案，因為這些可能就是簡體文字，不應該用 Big5 轉換成 UTF-8！
+                // 跳過一些 zh-cn 的檔案,因為這些可能就是簡體文字,不應該用 Big5 轉換成 UTF-8!
                 || path.ToLower().Contains(@"zh-cn")
                 || (path.ToLower().EndsWith(".js") && path.ToLower().Contains("lang"))
                 )
@@ -712,6 +736,211 @@ namespace ReplaceText
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 精準判斷檔案是否為文字檔案
+        /// 使用多種啟發式規則來檢測二進位內容
+        /// </summary>
+        /// <param name="filePath">檔案路徑</param>
+        /// <returns>如果是文字檔案則返回 true,否則返回 false</returns>
+        private static bool IsTextFile(string filePath)
+        {
+            try
+            {
+                FileInfo fileInfo = new FileInfo(filePath);
+
+                // 空檔案視為文字檔
+                if (fileInfo.Length == 0)
+                    return true;
+
+                // 太大的檔案跳過 (超過 100MB 可能是大型資料檔)
+                if (fileInfo.Length > 100 * 1024 * 1024)
+                    return false;
+
+                // 讀取檔案開頭部分進行分析 (最多讀取 8KB 或整個檔案)
+                int bytesToCheck = (int)Math.Min(fileInfo.Length, 8192);
+                byte[] buffer = new byte[bytesToCheck];
+
+                using (FileStream fs = File.OpenRead(filePath))
+                {
+                    fs.Read(buffer, 0, bytesToCheck);
+                }
+
+                // 檢查常見的二進位檔案標記 (Magic Numbers)
+                if (HasBinarySignature(buffer))
+                    return false;
+
+                // 統計可疑字元
+                int nullBytes = 0;           // NULL 字元數量
+                int controlChars = 0;        // 控制字元數量 (排除常見的換行、Tab 等)
+                int highBytes = 0;           // 高位元組 (>= 0x80) 數量
+                int printableChars = 0;      // 可列印字元數量
+
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    byte b = buffer[i];
+
+                    if (b == 0x00)
+                    {
+                        nullBytes++;
+                    }
+                    else if (b == 0x09 || b == 0x0A || b == 0x0D || (b >= 0x20 && b <= 0x7E))
+                    {
+                        // Tab, LF, CR, 或 ASCII 可列印字元
+                        printableChars++;
+                    }
+                    else if (b < 0x20 && b != 0x1B) // 控制字元 (排除 ESC)
+                    {
+                        controlChars++;
+                    }
+                    else if (b >= 0x80)
+                    {
+                        highBytes++;
+                    }
+                }
+
+                // 判斷規則:
+                // 1. 如果有 NULL 字元且比例超過 1%,很可能是二進位檔
+                if (nullBytes > 0 && (double)nullBytes / buffer.Length > 0.01)
+                    return false;
+
+                // 2. 如果控制字元比例超過 5%,可能是二進位檔
+                if ((double)controlChars / buffer.Length > 0.05)
+                    return false;
+
+                // 3. 計算文字字元比例 (可列印 ASCII + 高位元組視為潛在的多位元組字元)
+                double textRatio = (double)(printableChars + highBytes) / buffer.Length;
+
+                // 如果文字字元比例低於 85%,可能不是文字檔
+                if (textRatio < 0.85)
+                    return false;
+
+                // 4. 檢查是否包含有效的 UTF-8 序列或其他文字編碼
+                if (!ContainsValidTextEncoding(buffer))
+                    return false;
+
+                return true;
+            }
+            catch
+            {
+                // 無法讀取的檔案視為非文字檔
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查檔案開頭是否包含已知的二進位檔案標記
+        /// </summary>
+        private static bool HasBinarySignature(byte[] buffer)
+        {
+            if (buffer.Length < 4)
+                return false;
+
+            // 檢查常見的二進位檔案 Magic Numbers
+            // PE executable (Windows EXE/DLL)
+            if (buffer[0] == 0x4D && buffer[1] == 0x5A) // "MZ"
+                return true;
+
+            // ELF executable (Linux)
+            if (buffer[0] == 0x7F && buffer[1] == 0x45 && buffer[2] == 0x4C && buffer[3] == 0x46) // "\x7FELF"
+                return true;
+
+            // ZIP/JAR/Office documents
+            if (buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 && buffer[3] == 0x04) // "PK\x03\x04"
+                return true;
+
+            // PNG
+            if (buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47)
+                return true;
+
+            // JPEG
+            if (buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF)
+                return true;
+
+            // GIF
+            if (buffer[0] == 0x47 && buffer[1] == 0x49 && buffer[2] == 0x46) // "GIF"
+                return true;
+
+            // PDF
+            if (buffer[0] == 0x25 && buffer[1] == 0x50 && buffer[2] == 0x44 && buffer[3] == 0x46) // "%PDF"
+                return true;
+
+            // RAR
+            if (buffer[0] == 0x52 && buffer[1] == 0x61 && buffer[2] == 0x72 && buffer[3] == 0x21) // "Rar!"
+                return true;
+
+            // 7z
+            if (buffer.Length >= 6 && buffer[0] == 0x37 && buffer[1] == 0x7A && buffer[2] == 0xBC && buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
+                return true;
+
+            // Class file (Java)
+            if (buffer[0] == 0xCA && buffer[1] == 0xFE && buffer[2] == 0xBA && buffer[3] == 0xBE)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// 檢查緩衝區是否包含有效的文字編碼序列
+        /// </summary>
+        private static bool ContainsValidTextEncoding(byte[] buffer)
+        {
+            // 嘗試將內容解碼為 UTF-8
+            try
+            {
+                string text = Encoding.UTF8.GetString(buffer);
+
+                // 如果包含 Unicode 替換字元 (U+FFFD) 的比例過高,可能不是有效的 UTF-8
+                int replacementChars = text.Count(c => c == '\uFFFD');
+                if (replacementChars > buffer.Length * 0.1)
+                {
+                    // UTF-8 解碼失敗率過高,嘗試其他編碼
+                    // 檢查是否可能是其他單位元組或雙位元組編碼
+                    return ContainsReasonableCharacters(buffer);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return ContainsReasonableCharacters(buffer);
+            }
+        }
+
+        /// <summary>
+        /// 檢查緩衝區是否包含合理的字元分布
+        /// </summary>
+        private static bool ContainsReasonableCharacters(byte[] buffer)
+        {
+            // 統計常見的文字檔案特徵
+            int lineBreaks = 0;
+            int spaces = 0;
+            int alphanumeric = 0;
+
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                byte b = buffer[i];
+
+                if (b == 0x0A || b == 0x0D) // LF 或 CR
+                    lineBreaks++;
+                else if (b == 0x20 || b == 0x09) // 空格或 Tab
+                    spaces++;
+                else if ((b >= 0x30 && b <= 0x39) || // 數字
+                         (b >= 0x41 && b <= 0x5A) || // 大寫字母
+                         (b >= 0x61 && b <= 0x7A))   // 小寫字母
+                    alphanumeric++;
+            }
+
+            // 文字檔通常會有換行符號或空格
+            if (lineBreaks > 0 || spaces > buffer.Length * 0.05)
+                return true;
+
+            // 或者包含大量英數字元
+            if (alphanumeric > buffer.Length * 0.3)
+                return true;
+
+            return false;
         }
     }
 }
