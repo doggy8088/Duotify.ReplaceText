@@ -19,7 +19,7 @@ namespace ReplaceText
         private static readonly HashSet<string> CodeExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".sln", ".cs", ".js", ".vb", ".vbs", ".jsl", ".xsd", ".settings", ".htm", ".html",
-            ".cshtml", ".vbhtml", ".aspx", ".ascx", ".ashx", ".master", ".xslt", ".rpt", ".resx",
+            ".cshtml", ".vbhtml", ".aspx", ".ascx", ".ashx", ".master", ".xslt", ".resx",
             ".config", ".cd", ".rdlc", ".wsf", ".css", ".sitemap", ".skin", ".browser", ".disco",
             ".wsdl", ".discomap", ".asa", ".asax", ".asp", ".as", ".asmx", ".webinfo", ".wdproj",
             ".csproj", ".vbproj", ".xsl", ".edmx", ".dbml"
