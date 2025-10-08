@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+
 ## [1.0.0] - 2025-10-08
 
 ### Changed
@@ -38,15 +39,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 
 - 修正 switch 陳述式中無法到達的程式碼警告
+- 已正確註冊 .NET 8 的程式碼頁編碼
 - 修正 nullable 參考型別相關警告
 - 移除未使用的變數
-- 已正確註冊 .NET 8 的程式碼頁編碼
 
 ### Removed
 
 - 移除 Properties/AssemblyInfo.cs（已遷移至 .csproj）
 - 移除舊式專案檔格式，改用 SDK-style .csproj
-- 舊套件命名（ReplaceText）之獨立 2.0.0 條目已合併入本次 1.0.0 發行說明
 
 ## [0.1.0] - 2010
 
