@@ -37,20 +37,20 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal
       continue-on-error: true
 
-    - name: Publish artifacts (Windows only)
-      if: matrix.os == 'windows-latest'
-      run: |
-        dotnet publish ReplaceText/ReplaceText.csproj -c Release -r win-x64 --self-contained -o ./publish/win-x64
-        dotnet publish ReplaceText/ReplaceText.csproj -c Release -r linux-x64 --self-contained -o ./publish/linux-x64
-        dotnet publish ReplaceText/ReplaceText.csproj -c Release -r osx-x64 --self-contained -o ./publish/osx-x64
+    # - name: Publish artifacts (Windows only)
+    #   if: matrix.os == 'windows-latest'
+    #   run: |
+    #     dotnet publish ReplaceText/ReplaceText.csproj -c Release -r win-x64 --self-contained -o ./publish/win-x64
+    #     dotnet publish ReplaceText/ReplaceText.csproj -c Release -r linux-x64 --self-contained -o ./publish/linux-x64
+    #     dotnet publish ReplaceText/ReplaceText.csproj -c Release -r osx-x64 --self-contained -o ./publish/osx-x64
 
-    - name: Upload build artifacts (Windows only)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: ReplaceText-Binaries
-        path: ./publish/
-        retention-days: 30
+    # - name: Upload build artifacts (Windows only)
+    #   if: matrix.os == 'windows-latest'
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: ReplaceText-Binaries
+    #     path: ./publish/
+    #     retention-days: 30
 
   code-quality:
     name: Code Quality
