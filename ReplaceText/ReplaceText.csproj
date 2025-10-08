@@ -10,9 +10,9 @@
     <LangVersion>latest</LangVersion>
 
     <!-- Assembly information -->
-    <Company>Microsoft</Company>
+    <Company>多奇數位創意有限公司</Company>
     <Product>ReplaceText</Product>
-    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Copyright>Copyright © Will 保哥 2010-2025</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
