@@ -648,6 +648,7 @@ namespace ReplaceText
                 case ".dmg":
                 case ".dmt":
                 case ".db":
+                case ".sqlite":
                 case ".zip":
                 case ".rar":
                 case ".7z":
@@ -695,6 +696,34 @@ namespace ReplaceText
 
                 case ".ttf":
                 case ".ttc":
+                // Additional common development/build binary types
+                case ".class":      // Java compiled class
+                case ".jar":        // Java archive
+                case ".war":        // Web application archive
+                case ".ear":        // Enterprise archive
+                case ".dex":        // Android dalvik executable
+                case ".apk":        // Android package
+                case ".aar":        // Android library
+                case ".so":         // Unix shared object
+                case ".dylib":      // macOS dynamic library
+                case ".lib":        // static library (Windows)
+                case ".o":          // object file
+                case ".obj":        // object file (Windows)
+                case ".a":          // static archive (Unix)
+                case ".pyc":        // Python compiled bytecode
+                case ".pyo":
+                case ".pyd":        // Python extension (Windows)
+                case ".nupkg":      // NuGet package
+                case ".vsix":       // VS extension package
+                case ".sdf":        // SQL Server Compact database
+                case ".db3":        // alternate sqlite extension
+                case ".sqlite3":    // alternate sqlite extension
+                case ".sqlite-shm": // sqlite shared memory
+                case ".sqlite-wal": // sqlite write-ahead log
+                case ".db-journal": // sqlite rollback journal
+                case ".p12":        // PKCS#12 archive
+                case ".der":        // binary certificate
+                case ".keystore":   // Java keystore (binary)
                     return true;
                 default:
                     return false;
@@ -715,9 +744,24 @@ namespace ReplaceText
 
                 switch (ext.ToLower())
                 {
-                    case ".csv":
-                    case ".txt":
-                        return true;
+                        case ".csv":
+                        case ".txt":
+                        // Common textual/data files that are usually not code and should be skipped
+                        case ".md":
+                        case ".log":
+                        case ".sql":
+                        case ".ini":
+                        case ".json":
+                        case ".xml":
+                        case ".yml":
+                        case ".yaml":
+                        case ".properties":
+                        case ".toml":
+                        case ".env":
+                        case ".lock":
+                        case ".conf":
+                        case ".cfg":
+                            return true;
                     default:
                         return false;
                 }
