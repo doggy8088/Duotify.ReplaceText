@@ -15,6 +15,41 @@ namespace ReplaceText
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
+        // 中央化副檔名清單，使用 HashSet 提升查詢與維護性
+        private static readonly HashSet<string> CodeExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".sln", ".cs", ".js", ".vb", ".vbs", ".jsl", ".xsd", ".settings", ".htm", ".html",
+            ".cshtml", ".vbhtml", ".aspx", ".ascx", ".ashx", ".master", ".xslt", ".rpt", ".resx",
+            ".config", ".cd", ".rdlc", ".wsf", ".css", ".sitemap", ".skin", ".browser", ".disco",
+            ".wsdl", ".discomap", ".asa", ".asax", ".asp", ".as", ".asmx", ".webinfo", ".wdproj",
+            ".csproj", ".vbproj", ".xsl", ".edmx", ".dbml"
+        };
+
+        // 預設會被視為文字但在預設 (bModifyTextFile=false) 時忽略的副檔名。
+        // 當 bModifyTextFile 為 true 時，會把這些副檔名包含進掃描範圍。
+        private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".txt", ".md", ".log", ".sql", ".csv", ".ini", ".json", ".xml", ".yml", ".yaml",
+            ".properties", ".toml", ".env", ".lock", ".conf", ".cfg"
+        };
+
+        // 已知的二進位副檔名，所有可能會破壞或不應該當成文字處理的檔案
+        private static readonly HashSet<string> BinaryExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".exe", ".dll", ".pdb", ".suo", ".cer", ".pfx", ".user", ".bak", ".cab",
+            ".0", ".1", ".bc", ".bc!", ".bdf", ".bgf", ".bi", ".bin", ".ctx", ".com",
+            ".dmg", ".dmt", ".db", ".sqlite", ".zip", ".rar", ".7z", ".gz", ".flv",
+            ".fla", ".swf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".pdf",
+            ".vsd", ".chm", ".rp", ".cp", ".xmind", ".cache", ".resources", ".licenses",
+            ".sis", ".wmv", ".avi", ".mp3", ".mp4", ".mdf", ".ldf", ".msg", ".jpg",
+            ".gif", ".png", ".bmp", ".tif", ".psd", ".ai", ".ico", ".ttf", ".ttc",
+            // development/build artifacts
+            ".class", ".jar", ".war", ".ear", ".dex", ".apk", ".aar", ".so", ".dylib",
+            ".lib", ".o", ".obj", ".a", ".pyc", ".pyo", ".pyd", ".nupkg", ".vsix",
+            ".sdf", ".db3", ".sqlite3", ".sqlite-shm", ".sqlite-wal", ".db-journal",
+            ".p12", ".der", ".keystore"
+        };
+
         /// <summary>
         /// 是否為測試執行模式
         /// </summary>
@@ -123,18 +158,23 @@ namespace ReplaceText
 
             if (isDir)
             {
-                List<string> files = new List<string>();
-
-                string valid_file_exts = "*.sln *.cs *.js *.vb *.vbs *.jsl *.xsd *.settings *.htm *.html *.cshtml *.vbhtml *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd *.rdlc *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asax *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl *.edmx *.dbml";
+                // 使用 EnumerateFiles 並以 extension 交叉比對，確保掃描與 IsIgnored / IsBinary 的判斷使用同一份清單
+                var allowedExts = new HashSet<string>(CodeExtensions, StringComparer.OrdinalIgnoreCase);
 
                 if (bModifyTextFile)
                 {
-                    valid_file_exts += " *.txt *.md *.log *.sql *.csv *.ini";
+                    // 當允許修改文字檔案時，加入文字類型副檔名到掃描清單
+                    allowedExts.UnionWith(TextExtensions);
                 }
 
-                foreach (var searchPattern in valid_file_exts.Split(' '))
+                foreach (string filePath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
                 {
-                    foreach (string filePath in Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
+                    string ext = Path.GetExtension(filePath);
+
+                    if (string.IsNullOrEmpty(ext))
+                        continue;
+
+                    if (allowedExts.Contains(ext))
                     {
                         ProcessFile(filePath, oldValue, newValue);
                     }
@@ -622,112 +662,10 @@ namespace ReplaceText
         {
             string ext = Path.GetExtension(path);
 
-            switch (ext.ToLower())
-            {
-                case ".exe":
-                case ".dll":
-                case ".pdb":
-                case ".suo":
+            if (string.IsNullOrEmpty(ext))
+                return false;
 
-                case ".cer":
-                case ".pfx":
-
-                case ".user":
-                case ".bak":
-                case ".cab":
-                case ".0":
-                case ".1":
-                case ".bc":
-                case ".bc!":
-                case ".bdf":
-                case ".bgf":
-                case ".bi":
-                case ".bin":
-                case ".ctx":
-                case ".com":
-                case ".dmg":
-                case ".dmt":
-                case ".db":
-                case ".sqlite":
-                case ".zip":
-                case ".rar":
-                case ".7z":
-                case ".gz":
-                case ".flv":
-                case ".fla":
-                case ".swf":
-
-                case ".doc":
-                case ".docx":
-                case ".ppt":
-                case ".pptx":
-                case ".xls":
-                case ".xlsx":
-                case ".pdf":
-                case ".vsd":
-                case ".chm":
-                case ".rp":
-                case ".cp":
-                case ".xmind":
-
-                case ".cache":
-                case ".resources":
-                case ".licenses":
-                case ".SIS":
-
-                case ".wmv":
-                case ".avi":
-                case ".mp3":
-                case ".mp4":
-
-                case ".mdf":
-                case ".ldf":
-
-                case ".msg":
-
-                case ".jpg":
-                case ".gif":
-                case ".png":
-                case ".bmp":
-                case ".tif":
-                case ".psd":
-                case ".ai":
-                case ".ico":
-
-                case ".ttf":
-                case ".ttc":
-                // Additional common development/build binary types
-                case ".class":      // Java compiled class
-                case ".jar":        // Java archive
-                case ".war":        // Web application archive
-                case ".ear":        // Enterprise archive
-                case ".dex":        // Android dalvik executable
-                case ".apk":        // Android package
-                case ".aar":        // Android library
-                case ".so":         // Unix shared object
-                case ".dylib":      // macOS dynamic library
-                case ".lib":        // static library (Windows)
-                case ".o":          // object file
-                case ".obj":        // object file (Windows)
-                case ".a":          // static archive (Unix)
-                case ".pyc":        // Python compiled bytecode
-                case ".pyo":
-                case ".pyd":        // Python extension (Windows)
-                case ".nupkg":      // NuGet package
-                case ".vsix":       // VS extension package
-                case ".sdf":        // SQL Server Compact database
-                case ".db3":        // alternate sqlite extension
-                case ".sqlite3":    // alternate sqlite extension
-                case ".sqlite-shm": // sqlite shared memory
-                case ".sqlite-wal": // sqlite write-ahead log
-                case ".db-journal": // sqlite rollback journal
-                case ".p12":        // PKCS#12 archive
-                case ".der":        // binary certificate
-                case ".keystore":   // Java keystore (binary)
-                    return true;
-                default:
-                    return false;
-            }
+            return BinaryExtensions.Contains(ext);
 
         }
 
@@ -742,29 +680,16 @@ namespace ReplaceText
             {
                 string ext = Path.GetExtension(path);
 
-                switch (ext.ToLower())
+                if (string.IsNullOrEmpty(ext))
+                    return false;
+
+                // 當 bModifyTextFile 為 false 時，預設會跳過這些常見資料/文字檔
+                if (!bModifyTextFile && TextExtensions.Contains(ext))
                 {
-                        case ".csv":
-                        case ".txt":
-                        // Common textual/data files that are usually not code and should be skipped
-                        case ".md":
-                        case ".log":
-                        case ".sql":
-                        case ".ini":
-                        case ".json":
-                        case ".xml":
-                        case ".yml":
-                        case ".yaml":
-                        case ".properties":
-                        case ".toml":
-                        case ".env":
-                        case ".lock":
-                        case ".conf":
-                        case ".cfg":
-                            return true;
-                    default:
-                        return false;
+                    return true;
                 }
+
+                return false;
             }
             else
             {
