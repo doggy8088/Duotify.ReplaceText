@@ -66,7 +66,7 @@ namespace ReplaceText
         private static bool bShowFullPath = false;
 
         /// <summary>
-        /// 是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 2010 程式相關檔案)
+        /// 是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 程式相關檔案)
         /// </summary>
         private static bool bModifyTextFile = false;
 
@@ -220,7 +220,7 @@ namespace ReplaceText
             Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK /U <Directory|File>");
             Console.WriteLine();
             Console.WriteLine("/T\t測試執行模式,不會寫入檔案 (Dry Run)");
-            Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔,僅修改 Visual Studio 2010 程式相關檔案)");
+            Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔,僅修改 Visual Studio 程式相關檔案)");
             Console.WriteLine("/V\t顯示詳細輸出模式,會顯示所有掃描的檔案清單");
             Console.WriteLine("/F\t顯示完整的檔案路徑(預設僅顯示相對路徑)");
             Console.WriteLine("/GBK\t讓 GBK (GB18030) 字集優先於 Big5 判斷");
