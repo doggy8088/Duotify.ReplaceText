@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Ignore;
+using UtfUnknown;
 
 namespace ReplaceText
 {
@@ -105,6 +106,70 @@ namespace ReplaceText
         /// 累積錯誤訊息清單 (當 bVerbose 為 false 時使用)
         /// </summary>
         private static List<string> errorMessages = new List<string>();
+
+        /// <summary>
+        /// 使用 UTF.Unknown 函式庫自動偵測檔案編碼
+        /// </summary>
+        /// <param name="filePath">檔案路徑</param>
+        /// <param name="detectedContent">偵測成功後讀取的檔案內容</param>
+        /// <param name="detectedEncoding">偵測到的編碼名稱</param>
+        /// <param name="errorMessage">失敗時的錯誤訊息</param>
+        /// <param name="minConfidence">最低信心度門檻 (預設 0.7)</param>
+        /// <returns>偵測成功返回 true，否則返回 false</returns>
+        private static bool TryDetectEncoding(string filePath, out string detectedContent, out string detectedEncoding, out string errorMessage, float minConfidence = 0.7f)
+        {
+            detectedContent = string.Empty;
+            detectedEncoding = string.Empty;
+            errorMessage = string.Empty;
+
+            try
+            {
+                var detectionResult = CharsetDetector.DetectFromFile(filePath);
+
+                if (detectionResult?.Detected != null && detectionResult.Detected.Confidence >= minConfidence)
+                {
+                    string detectedCharset = detectionResult.Detected.EncodingName;
+                    float confidence = detectionResult.Detected.Confidence;
+
+                    // 嘗試使用偵測到的編碼讀取檔案
+                    try
+                    {
+                        Encoding encoding = detectionResult.Detected.Encoding;
+                        detectedContent = File.ReadAllText(filePath, encoding);
+                        detectedEncoding = detectedCharset;
+
+                        if (bDebugMode)
+                        {
+                            Console.WriteLine($"[{filePath}] 自動偵測到編碼: {detectedCharset} (信心度: {confidence:P0})");
+                        }
+
+                        return true;
+                    }
+                    catch
+                    {
+                        // 偵測到的編碼無法正確讀取檔案
+                        errorMessage = $"偵測到編碼 {detectedCharset} (信心度: {confidence:P0})，但無法正確讀取";
+                        return false;
+                    }
+                }
+                else
+                {
+                    // 編碼偵測信心度不足
+                    string detectedInfo = detectionResult?.Detected != null
+                        ? $"偵測到 {detectionResult.Detected.EncodingName} (信心度: {detectionResult.Detected.Confidence:P0}，過低)"
+                        : "無法偵測編碼";
+
+                    errorMessage = $"含無效文字或錯誤編碼({detectedInfo})";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                // UTF.Unknown 偵測失敗
+                errorMessage = $"編碼偵測失敗: {ex.Message}";
+                return false;
+            }
+        }
 
 
         private static void Main(string[] args)
@@ -589,6 +654,16 @@ namespace ReplaceText
                         encoding = "UTF8";
                     }
 
+                    if (bDebugMode) {
+                        // Console.WriteLine($"[{filePath}] 檔案前3個位元組: {b1:X2} {b2:X2} {b3:X2}");
+                        // Console.WriteLine($"[{filePath}] oldContent_UTF8 == oldContent_UTF8_Only: {oldContent_UTF8 == oldContent_UTF8_Only}");
+                        // Console.WriteLine($"[{filePath}] oldContent_UTF8.Length: {oldContent_UTF8.Length}");
+                        // Console.WriteLine($"[{filePath}] oldContent_UTF8_Only.Length: {oldContent_UTF8_Only.Length}");
+
+                        // File.WriteAllText(Path.Combine(Path.GetDirectoryName(filePath) ?? "", "debug_oldContent_UTF8.txt"), oldContent_UTF8, Encoding.UTF8);
+                        // File.WriteAllText(Path.Combine(Path.GetDirectoryName(filePath) ?? "", "debug_oldContent_UTF8_Only.txt"), oldContent_UTF8_Only, Encoding.UTF8);
+                    }
+
                     // 判斷沒有 BOM 的 UTF-8 字元
                     if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
                     {
@@ -683,24 +758,36 @@ namespace ReplaceText
 
                     #endregion
 
-                    // TODO: 可加入更多編碼判斷
-
 
                     if (!is_valid_charset)
                     {
-                        string errorMsg = $"{StripCurrentPath(filePath)} 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)";
-
-                        if (!progressOnly)
+                        // 使用 UTF.Unknown 嘗試自動偵測編碼
+                        if (TryDetectEncoding(filePath, out oldContent, out encoding, out string detectErrorMsg))
                         {
-                            Console.Write(progressPrefix + StripCurrentPath(filePath));
-                            ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)", ConsoleColor.Yellow);
+                            if (bDebugMode)
+                            {
+                                // File.WriteAllText(Path.Combine(Path.GetDirectoryName(filePath) ?? "", "debug_oldContent_Detected.txt"), oldContent, Encoding.UTF8);
+                            }
+
+                            // 偵測成功
+                            is_valid_charset = true;
                         }
                         else
                         {
-                            // 在非詳細模式下,將錯誤訊息累積起來
-                            errorMessages.Add(errorMsg);
+                            // 偵測失敗，輸出錯誤訊息
+                            string errorMsg = $"{StripCurrentPath(filePath)} {detectErrorMsg}";
+
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor($" {detectErrorMsg}", ConsoleColor.Yellow);
+                            }
+                            else
+                            {
+                                errorMessages.Add(errorMsg);
+                            }
+                            return 'x';
                         }
-                        return 'x';
                     }
 
                     string newContent = oldContent;
@@ -709,86 +796,57 @@ namespace ReplaceText
 
                     if (!bTestRun && !string.IsNullOrEmpty(oldValue) && newValue != null)
                     {
-                        newContent = oldContent.Replace(oldValue, newValue);
+                        newContent = newContent.Replace(oldValue, newValue);
                     }
 
                     #endregion
 
                     if (!string.IsNullOrEmpty(newContent))
                     {
-                        if (oldContent != newContent)
+                        // 判斷是否需要轉換：內容有變更或編碼需要轉換
+                        bool contentChanged = oldContent != newContent;
+                        bool needEncodingConversion = encoding != "UTF8";
+
+                        if (contentChanged || needEncodingConversion)
                         {
+                            // 準備輸出訊息
+                            string message;
+                            ConsoleColor color;
+
+                            if (contentChanged)
+                            {
+                                message = " 寫入中(" + encoding + ")";
+                                color = ConsoleColor.Green;
+                            }
+                            else
+                            {
+                                // 僅編碼轉換
+                                message = $" ({encoding} -> UTF-8)";
+                                color = encoding == "GBK" ? ConsoleColor.DarkGreen : ConsoleColor.Green;
+                            }
+
+                            // 輸出處理訊息
                             if (!progressOnly)
                             {
                                 Console.Write(progressPrefix + StripCurrentPath(filePath));
-                                ConsoleWriteWithColor(" 寫入中(" + encoding + ")", ConsoleColor.Green);
+
+                                if (contentChanged)
+                                {
+                                    ConsoleWriteWithColor(message, color);
+                                    ConsoleWriteLineWithColor("done", ConsoleColor.Green);
+                                }
+                                else
+                                {
+                                    ConsoleWriteLineWithColor(message, color);
+                                }
                             }
 
+                            // 寫入檔案
                             if (!bTestRun)
                             {
                                 File.WriteAllText(filePath, newContent, Encoding.UTF8);
                             }
 
-                            if (!progressOnly)
-                            {
-                                ConsoleWriteLineWithColor("done", ConsoleColor.Green);
-                            }
-                            return 'o';
-                        }
-                        else if (encoding == "BIG5")
-                        {
-                            if (!progressOnly)
-                            {
-                                Console.Write(progressPrefix + StripCurrentPath(filePath));
-                                ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
-                            }
-
-                            if (!bTestRun)
-                            {
-                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                            }
-                            return 'o';
-                        }
-                        else if (encoding == "GBK")
-                        {
-                            if (!progressOnly)
-                            {
-                                Console.Write(progressPrefix + StripCurrentPath(filePath));
-                                ConsoleWriteLineWithColor(" (GBK -> UTF-8)", ConsoleColor.DarkGreen);
-                            }
-
-                            if (!bTestRun)
-                            {
-                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                            }
-                            return 'o';
-                        }
-                        else if (encoding == "Unicode")
-                        {
-                            if (!progressOnly)
-                            {
-                                Console.Write(progressPrefix + StripCurrentPath(filePath));
-                                ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
-                            }
-
-                            if (!bTestRun)
-                            {
-                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                            }
-                            return 'o';
-                        }
-                        else if (encoding == "ISO-8859-1")
-                        {
-                            if (!progressOnly)
-                            {
-                                Console.Write(progressPrefix + StripCurrentPath(filePath));
-                                ConsoleWriteLineWithColor(" (ISO-8859-1 -> UTF-8)", ConsoleColor.Green);
-                            }
-
-                            if (!bTestRun)
-                            {
-                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                            }
                             return 'o';
                         }
                         else

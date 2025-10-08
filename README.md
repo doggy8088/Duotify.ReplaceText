@@ -5,7 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-一個強大的文字編碼轉換與字串替換工具，專為處理多種編碼格式的文字檔案而設計。
+一個強大的文字編碼轉換與字串替換工具，專為處理多種編碼格式的文字檔案而設計。預設會將所有程式碼轉換為 UTF-8 with BOM 編碼，也支援將常見的文字檔案轉換為 UTF-8 with BOM 編碼。
 
 現在可作為 .NET Global Tool 安裝，讓您在任何地方使用 `replacetext` 命令！
 
@@ -25,7 +25,7 @@ replacetext /path/to/your/project
 
 ## 功能特點
 
-- 🔄 自動偵測並轉換多種編碼格式 (UTF-8、Unicode、Big5、GBK、ISO-8859-1)
+- 🔄 自動偵測並轉換多種編碼格式 (透過 [UTF.Unknown](https://github.com/CharsetDetector/UTF-unknown) 自動偵測未知編碼)
 - 🔍 遞迴掃描目錄中的所有支援檔案
 - ✏️ 批次字串替換功能
 - 🎯 支援多種開發相關檔案格式 (.cs, .js, .html, .config 等)
