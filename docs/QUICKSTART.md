@@ -10,14 +10,14 @@
 
 ### 選項 1：使用發行版本（推薦）
 
-1. 從 [Releases](https://github.com/doggy8088/ReplaceText/releases) 下載適合您作業系統的版本
+1. 從 [Releases](https://github.com/doggy8088/Duotify.ReplaceText/releases) 下載適合您作業系統的版本
 2. 解壓縮檔案
 3. 直接執行 `ReplaceText.exe`（Windows）或 `ReplaceText`（Linux/macOS）
 
 ### 選項 2：從原始碼建構
 
 ```bash
-git clone https://github.com/doggy8088/ReplaceText.git
+git clone https://github.com/doggy8088/Duotify.ReplaceText.git
 cd ReplaceText
 dotnet build -c Release
 ```
@@ -183,7 +183,7 @@ dotnet run --project ReplaceText -- /T C:\MyProject
 
 ## 需要協助？
 
-- 提交 [Issue](https://github.com/doggy8088/ReplaceText/issues)
+- 提交 [Issue](https://github.com/doggy8088/Duotify.ReplaceText/issues)
 - 查看 [文件](../README.md)
 - 聯繫維護者
 

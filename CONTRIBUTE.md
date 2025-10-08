@@ -19,7 +19,7 @@
 
      - `git clone <your-fork-url>`
 
-     - `git remote add upstream https://github.com/doggy8088/ReplaceText.git`
+     - `git remote add upstream https://github.com/doggy8088/Duotify.ReplaceText.git`
 
 2. 建立分支：
 

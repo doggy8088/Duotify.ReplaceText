@@ -93,7 +93,7 @@ replacetext /path/to/project
 ## 📚 相關連結
 
 - [NuGet Gallery - Duotify.ReplaceText](https://www.nuget.org/packages/Duotify.ReplaceText/)
-- [GitHub Repository](https://github.com/doggy8088/ReplaceText)
+- [GitHub Repository](https://github.com/doggy8088/Duotify.ReplaceText)
 - [安裝指南](./INSTALL.md)
 - [更新日誌](../CHANGELOG.md)
 
@@ -106,7 +106,7 @@ replacetext /path/to/project
 
 ## 🆘 需要協助?
 
-如果在遷移過程中遇到問題,請至 [GitHub Issues](https://github.com/doggy8088/ReplaceText/issues) 回報。
+如果在遷移過程中遇到問題,請至 [GitHub Issues](https://github.com/doggy8088/Duotify.ReplaceText/issues) 回報。
 
 ---
 

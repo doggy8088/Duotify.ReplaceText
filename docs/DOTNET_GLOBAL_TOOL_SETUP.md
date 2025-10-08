@@ -55,7 +55,7 @@
 
 - 📖 詳細安裝說明：查看 `INSTALL.md`
 - 🚀 發佈流程說明：查看 `PUBLISH.md`
-- 🐛 問題回報：https://github.com/doggy8088/ReplaceText/issues
+- 🐛 問題回報：https://github.com/doggy8088/Duotify.ReplaceText/issues
 - 📧 Email: will@miniasp.com
 
 ---

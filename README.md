@@ -21,7 +21,7 @@ replacetext /path/to/your/project
 # 3. 完成！
 ```
 
-📖 **更多使用方式請參閱 [安裝指南](docs/INSTALL.md)**
+📖 **更多使用方式請參閱 [安裝指南](https://github.com/doggy8088/Duotify.ReplaceText/blob/main/docs/INSTALL.md)**
 
 ## 功能特點
 
@@ -65,9 +65,9 @@ dotnet tool update --global Duotify.ReplaceText
 dotnet tool uninstall --global Duotify.ReplaceText
 ```
 
-📖 **詳細安裝說明請參閱 [INSTALL.md](docs/INSTALL.md)**
+📖 **詳細安裝說明請參閱 [INSTALL.md](https://github.com/doggy8088/Duotify.ReplaceText/blob/main/docs/INSTALL.md)**
 
-### 方式 2：從原始碼建構 (在本機安裝)
+### 方式 2:從原始碼建構 (在本機安裝)
 
 下列步驟示範如何從原始程式碼在本機安裝和測試 `ReplaceText`，包含：打包成本機 NuGet 套件後以全域工具安裝、安裝為 local tool，以及直接執行或發佈可執行檔三種常用方式。
 
@@ -77,7 +77,7 @@ dotnet tool uninstall --global Duotify.ReplaceText
 
     ```powershell
     # 下載原始程式碼並切到專案資料夾
-    git clone https://github.com/doggy8088/ReplaceText.git
+    git clone https://github.com/doggy8088/Duotify.ReplaceText.git
     cd ReplaceText
 
     # 建構並產生 nupkg (Release); 套件預設會輸出到 ReplaceText\nupkg
@@ -132,7 +132,7 @@ dotnet tool uninstall --global Duotify.ReplaceText
 
 ### 方式 3：使用發行版本
 
-從 [Releases](https://github.com/doggy8088/ReplaceText/releases) 頁面下載適合您作業系統的版本。
+從 [Releases](https://github.com/doggy8088/Duotify.ReplaceText/releases) 頁面下載適合您作業系統的版本。
 
 ## 使用方法
 
@@ -310,6 +310,6 @@ Copyright (c) 2010-2025 Will 保哥 (doggy8088)
 
 ## 相關連結
 
-- [專案首頁](https://github.com/doggy8088/ReplaceText)
-- [問題回報](https://github.com/doggy8088/ReplaceText/issues)
-- [發行版本](https://github.com/doggy8088/ReplaceText/releases)
+- [專案首頁](https://github.com/doggy8088/Duotify.ReplaceText)
+- [問題回報](https://github.com/doggy8088/Duotify.ReplaceText/issues)
+- [發行版本](https://github.com/doggy8088/Duotify.ReplaceText/releases)

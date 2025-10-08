@@ -267,7 +267,7 @@ replacetext
 
 如有任何問題或建議，請透過以下方式聯絡：
 
-- GitHub Issues: https://github.com/doggy8088/ReplaceText/issues
+- GitHub Issues: https://github.com/doggy8088/Duotify.ReplaceText/issues
 - Email: will@miniasp.com
 
 ---

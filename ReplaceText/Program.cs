@@ -96,6 +96,16 @@ namespace ReplaceText
         /// </summary>
         private static bool bUnknownFileType = false;
 
+        /// <summary>
+        /// 是否啟用偵錯模式 (會先顯示完整的檔案清單及編號)
+        /// </summary>
+        private static bool bDebugMode = false;
+
+        /// <summary>
+        /// 累積錯誤訊息清單 (當 bVerbose 為 false 時使用)
+        /// </summary>
+        private static List<string> errorMessages = new List<string>();
+
 
         private static void Main(string[] args)
         {
@@ -148,6 +158,12 @@ namespace ReplaceText
                 else if (item.ToUpper() == "/U" || item.ToLower() == "-u")
                 {
                     bUnknownFileType = true;
+                    continue;
+                }
+                // 是否啟用偵錯模式
+                else if (item.ToUpper() == "/D" || item.ToLower() == "-d")
+                {
+                    bDebugMode = true;
                     continue;
                 }
                 else
@@ -270,6 +286,19 @@ namespace ReplaceText
                     Console.WriteLine("沒有符合條件的檔案可處理。");
                 }
 
+                // 若啟用偵錯模式，先顯示完整的檔案清單及編號
+                if (bDebugMode && total > 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("=== 偵錯模式：檔案清單 ===");
+                    for (int i = 0; i < candidates.Count; i++)
+                    {
+                        Console.WriteLine($"[{i + 1}] {StripCurrentPath(candidates[i])}");
+                    }
+                    Console.WriteLine("========================");
+                    Console.WriteLine();
+                }
+
                 int symbolCount = 0;
 
                 for (int i = 0; i < candidates.Count; i++)
@@ -293,6 +322,18 @@ namespace ReplaceText
                 if (!bVerbose && symbolCount > 0 && symbolCount % 50 != 0)
                 {
                     Console.WriteLine($" [{symbolCount}/{total}]");
+                }
+
+                // 在非詳細模式下,如果有累積的錯誤訊息,集中輸出
+                if (!bVerbose && errorMessages.Count > 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("=== 處理過程中發生的錯誤 ===");
+                    foreach (string errorMsg in errorMessages)
+                    {
+                        ConsoleWriteLineWithColor(errorMsg, ConsoleColor.Yellow);
+                    }
+                    Console.WriteLine($"總共 {errorMessages.Count} 個錯誤");
                 }
             }
             else
@@ -319,13 +360,25 @@ namespace ReplaceText
                     Console.Write(result);
                     Console.WriteLine(" [1/1]");
                 }
+
+                // 在非詳細模式下,如果有累積的錯誤訊息,集中輸出
+                if (!bVerbose && errorMessages.Count > 0)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("=== 處理過程中發生的錯誤 ===");
+                    foreach (string errorMsg in errorMessages)
+                    {
+                        ConsoleWriteLineWithColor(errorMsg, ConsoleColor.Yellow);
+                    }
+                    Console.WriteLine($"總共 {errorMessages.Count} 個錯誤");
+                }
             }
 
         }
 
         private static void ShowHelp()
         {
-            Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK /U <Directory|File>");
+            Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK /U /D <Directory|File>");
             Console.WriteLine();
             Console.WriteLine("/MO\t僅修改指定的文字檔案 (TextExtensions 清單中的副檔名) — 此選項隱含 /M");
             Console.WriteLine("\t可用替代參數: -mo");
@@ -336,6 +389,7 @@ namespace ReplaceText
             Console.WriteLine("/F\t顯示完整的檔案路徑(預設僅顯示相對路徑)");
             Console.WriteLine("/GBK\t讓 GBK (GB18030) 字集優先於 Big5 判斷");
             Console.WriteLine("/U\t自動判斷未知檔案類型 (預設僅處理已知的檔案類型)");
+            Console.WriteLine("/D\t偵錯模式,會先顯示完整的檔案清單及預計處理的編號");
             Console.WriteLine();
             Console.WriteLine("程式會自動尋找目前目錄或上層目錄的 .gitignore 檔案,並套用忽略規則。");
             Console.WriteLine();
@@ -629,12 +683,22 @@ namespace ReplaceText
 
                     #endregion
 
+                    // TODO: 可加入更多編碼判斷
+
+
                     if (!is_valid_charset)
                     {
+                        string errorMsg = $"{StripCurrentPath(filePath)} 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)";
+
                         if (!progressOnly)
                         {
                             Console.Write(progressPrefix + StripCurrentPath(filePath));
                             ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)", ConsoleColor.Yellow);
+                        }
+                        else
+                        {
+                            // 在非詳細模式下,將錯誤訊息累積起來
+                            errorMessages.Add(errorMsg);
                         }
                         return 'x';
                     }
@@ -768,10 +832,17 @@ namespace ReplaceText
             catch (Exception ex)
             {
                 // 例外視為處理失敗，Main 會依回傳值輸出 'x'
+                string errorMsg = $"{StripCurrentPath(filePath)} 例外錯誤: {ex.Message}";
+
                 if (!progressOnly)
                 {
                     Console.Write(progressPrefix + StripCurrentPath(filePath));
                     ConsoleWriteLineWithColor(" 例外錯誤: " + ex.Message, ConsoleColor.Red);
+                }
+                else
+                {
+                    // 在非詳細模式下,將錯誤訊息累積起來
+                    errorMessages.Add(errorMsg);
                 }
 
                 return 'x';

@@ -26,7 +26,7 @@ dotnet tool install --global Duotify.ReplaceText --add-source ./nupkg
 
 ```bash
 # 1. 複製專案
-git clone https://github.com/doggy8088/ReplaceText.git
+git clone https://github.com/doggy8088/Duotify.ReplaceText.git
 cd ReplaceText
 
 # 2. 建構並打包
@@ -234,9 +234,9 @@ dotnet tool install --global Duotify.ReplaceText --add-source ~/local-nuget-sour
 
 ## 更多資訊
 
-- [專案首頁](https://github.com/doggy8088/ReplaceText)
-- [問題回報](https://github.com/doggy8088/ReplaceText/issues)
-- [變更記錄](https://github.com/doggy8088/ReplaceText/blob/main/CHANGELOG.md)
+- [專案首頁](https://github.com/doggy8088/Duotify.ReplaceText)
+- [問題回報](https://github.com/doggy8088/Duotify.ReplaceText/issues)
+- [變更記錄](https://github.com/doggy8088/Duotify.ReplaceText/blob/main/CHANGELOG.md)
 
 ## 授權
 
