@@ -6,6 +6,10 @@ on:
       - main # 當 main 分支有新 commit 時觸發
   workflow_dispatch:  # 允許手動觸發
 
+permissions:
+  contents: write
+  packages: write
+
 env:
   DOTNET_VERSION: '8.0.x'
   PROJECT_PATH: 'ReplaceText/ReplaceText.csproj'
