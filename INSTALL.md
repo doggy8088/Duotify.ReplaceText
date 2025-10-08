@@ -1,4 +1,4 @@
-# ReplaceText 安裝指南
+# Duotify.ReplaceText 安裝指南
 
 ReplaceText 現在可以作為 .NET Global Tool 安裝，讓您可以在任何地方使用 `replacetext` 命令。
 
@@ -11,7 +11,7 @@ ReplaceText 現在可以作為 .NET Global Tool 安裝，讓您可以在任何�
 ### 方式 1：從 NuGet Gallery 安裝（推薦）
 
 ```bash
-dotnet tool install --global ReplaceText
+dotnet tool install --global Duotify.ReplaceText
 ```
 
 ### 方式 2：從本機 NuGet 套件安裝
@@ -19,7 +19,7 @@ dotnet tool install --global ReplaceText
 如果您有本機建構的 NuGet 套件檔案：
 
 ```bash
-dotnet tool install --global ReplaceText --add-source ./nupkg
+dotnet tool install --global Duotify.ReplaceText --add-source ./nupkg
 ```
 
 ### 方式 3：從原始碼建構並安裝
@@ -33,7 +33,7 @@ cd ReplaceText
 dotnet pack -c Release
 
 # 3. 安裝
-dotnet tool install --global ReplaceText --add-source ./ReplaceText/nupkg
+dotnet tool install --global Duotify.ReplaceText --add-source ./ReplaceText/nupkg
 ```
 
 ## 驗證安裝
@@ -100,25 +100,25 @@ replacetext -u ~/projects/myproject
 
 ## 命令列選項
 
-| 選項 | 說明 |
-|------|------|
-| `/T` 或 `-t` | 測試執行模式，不會寫入檔案 (Dry Run) |
-| `/M` 或 `-m` | 修改已知的文字檔案（預設會跳過 .txt、.md 等資料檔） |
-| `/V` 或 `-v` | 顯示詳細輸出模式，會顯示所有掃描的檔案清單 |
-| `/F` 或 `-f` | 顯示完整的檔案路徑（預設僅顯示相對路徑） |
-| `/GBK` 或 `-gbk` | 讓 GBK (GB18030) 字集優先於 Big5 判斷 |
-| `/U` 或 `-u` | 自動判斷未知檔案類型（預設僅處理已知的檔案類型） |
+| 選項             | 說明                                                |
+| ---------------- | --------------------------------------------------- |
+| `/T` 或 `-t`     | 測試執行模式，不會寫入檔案 (Dry Run)                |
+| `/M` 或 `-m`     | 修改已知的文字檔案（預設會跳過 .txt、.md 等資料檔） |
+| `/V` 或 `-v`     | 顯示詳細輸出模式，會顯示所有掃描的檔案清單          |
+| `/F` 或 `-f`     | 顯示完整的檔案路徑（預設僅顯示相對路徑）            |
+| `/GBK` 或 `-gbk` | 讓 GBK (GB18030) 字集優先於 Big5 判斷               |
+| `/U` 或 `-u`     | 自動判斷未知檔案類型（預設僅處理已知的檔案類型）    |
 
 ## 更新工具
 
 ```bash
-dotnet tool update --global ReplaceText
+dotnet tool update --global Duotify.ReplaceText
 ```
 
 ## 解除安裝
 
 ```bash
-dotnet tool uninstall --global ReplaceText
+dotnet tool uninstall --global Duotify.ReplaceText
 ```
 
 ## 查看已安裝的全域工具
@@ -137,6 +137,7 @@ dotnet tool list --global
 2. .NET 工具路徑已加入到系統 PATH 環境變數中
 
 預設工具路徑：
+
 - Windows: `%USERPROFILE%\.dotnet\tools`
 - Linux/macOS: `$HOME/.dotnet/tools`
 
@@ -154,7 +155,7 @@ dotnet tool list --global | grep ReplaceText       # Linux/macOS
 **A:** 可以，使用 `--version` 參數：
 
 ```bash
-dotnet tool install --global ReplaceText --version 2.0.0
+dotnet tool install --global Duotify.ReplaceText --version 1.0.0
 ```
 
 ### Q: 安裝失敗怎麼辦？
@@ -165,7 +166,7 @@ dotnet tool install --global ReplaceText --version 2.0.0
 2. 清除 NuGet 快取：`dotnet nuget locals all --clear`
 3. 使用 `--verbosity detailed` 查看詳細錯誤訊息：
    ```bash
-   dotnet tool install --global ReplaceText --verbosity detailed
+   dotnet tool install --global Duotify.ReplaceText --verbosity detailed
    ```
 
 ## 開發者資訊
@@ -182,10 +183,10 @@ dotnet build -c Release
 dotnet pack -c Release
 
 # 3. 解除安裝舊版本（如果存在）
-dotnet tool uninstall --global ReplaceText
+dotnet tool uninstall --global Duotify.ReplaceText
 
 # 4. 從本機安裝新版本
-dotnet tool install --global ReplaceText --add-source ./ReplaceText/nupkg
+dotnet tool install --global Duotify.ReplaceText --add-source ./ReplaceText/nupkg
 
 # 5. 測試
 replacetext /T /path/to/test/project
@@ -203,7 +204,7 @@ mkdir ~/local-nuget-source
 cp ./ReplaceText/nupkg/*.nupkg ~/local-nuget-source/
 
 # 3. 從本機來源安裝
-dotnet tool install --global ReplaceText --add-source ~/local-nuget-source
+dotnet tool install --global Duotify.ReplaceText --add-source ~/local-nuget-source
 ```
 
 ## 支援的檔案類型

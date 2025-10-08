@@ -1,7 +1,7 @@
 # ReplaceText
 
-[![NuGet](https://img.shields.io/nuget/v/ReplaceText.svg)](https://www.nuget.org/packages/ReplaceText/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/ReplaceText.svg)](https://www.nuget.org/packages/ReplaceText/)
+[![NuGet](https://img.shields.io/nuget/v/Duotify.ReplaceText.svg)](https://www.nuget.org/packages/Duotify.ReplaceText/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Duotify.ReplaceText.svg)](https://www.nuget.org/packages/Duotify.ReplaceText/)
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,7 +13,7 @@
 
 ```bash
 # 1. 安裝工具
-dotnet tool install --global ReplaceText
+dotnet tool install --global Duotify.ReplaceText
 
 # 2. 轉換專案中的所有檔案為 UTF-8
 replacetext /path/to/your/project
@@ -44,7 +44,7 @@ replacetext /path/to/your/project
 需要 [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高版本。
 
 ```bash
-dotnet tool install --global ReplaceText
+dotnet tool install --global Duotify.ReplaceText
 ```
 
 安裝後可在任何位置使用 `replacetext` 命令：
@@ -56,13 +56,13 @@ replacetext /path/to/your/project
 更新工具：
 
 ```bash
-dotnet tool update --global ReplaceText
+dotnet tool update --global Duotify.ReplaceText
 ```
 
 解除安裝：
 
 ```bash
-dotnet tool uninstall --global ReplaceText
+dotnet tool uninstall --global Duotify.ReplaceText
 ```
 
 📖 **詳細安裝說明請參閱 [INSTALL.md](INSTALL.md)**
@@ -84,10 +84,10 @@ dotnet tool uninstall --global ReplaceText
     dotnet pack .\ReplaceText\ReplaceText.csproj -c Release
 
     # 解除安裝舊版 (如果已安裝)
-    dotnet tool uninstall --global ReplaceText
+    dotnet tool uninstall --global Duotify.ReplaceText
 
     # 從本機 nupkg 資料夾安裝為全域工具
-    dotnet tool install --global ReplaceText --add-source .\ReplaceText\nupkg
+    dotnet tool install --global Duotify.ReplaceText --add-source .\ReplaceText\nupkg
 
     # 驗證安裝
     dotnet tool list -g
@@ -101,7 +101,7 @@ dotnet tool uninstall --global ReplaceText
     dotnet new tool-manifest
 
     # 從本機 nupkg 安裝到 local tool(會記錄在 .config/dotnet-tools.json)
-    dotnet tool install ReplaceText --local --add-source .\ReplaceText\nupkg
+    dotnet tool install Duotify.ReplaceText --local --add-source .\ReplaceText\nupkg
 
     # 執行 local tool(透過 dotnet tool run)
     dotnet tool run replacetext -- --help
@@ -124,10 +124,10 @@ dotnet tool uninstall --global ReplaceText
 
     ```powershell
     # 全域解除安裝
-    dotnet tool uninstall --global ReplaceText
+    dotnet tool uninstall --global Duotify.ReplaceText
 
     # local tool 解除安裝(在專案資料夾執行)
-    dotnet tool uninstall ReplaceText --local
+    dotnet tool uninstall Duotify.ReplaceText --local
     ```
 
 ### 方式 3：使用發行版本
@@ -279,7 +279,22 @@ Copyright (c) 2010-2025 Will 保哥 (doggy8088)
 
 ## 升級記錄
 
-### v2.0.0 (2025)
+### v1.0.0 (2025-10-08)
+
+- 🎉 首次以 **Duotify.ReplaceText** 套件名稱發佈
+- ✨ 新增 .gitignore 自動支援功能
+  - 自動尋找並套用 .gitignore 規則
+  - 避免意外轉換建構產物、套件檔案等
+  - 大幅減少不必要的檔案處理 (測試中減少 97% 處理量)
+- ✨ 升級至 .NET 8.0
+- 🔧 現代化專案結構 (SDK 風格的 .csproj)
+- 🤖 新增 GitHub Actions CI/CD
+- 📝 新增 .editorconfig 以確保程式碼品質
+- 🎯 支援多平台發布 (Windows、Linux、macOS)
+- 🐛 修正所有編譯警告
+- 📦 支援單一檔案發布
+
+### v2.0.0 (2025) - 舊套件名稱
 
 - ✨ 升級至 .NET 8.0
 - 🔧 現代化專案結構 (SDK 風格的 .csproj)

@@ -88,23 +88,23 @@ jobs:
         files: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
         generate_release_notes: true
         body: |
-          ## 🎉 ReplaceText ${{ steps.get_version.outputs.VERSION }} 已發佈！
+          ## 🎉 Duotify.ReplaceText ${{ steps.get_version.outputs.VERSION }} 已發佈！
 
           ### 安裝方式
 
           ```bash
-          dotnet tool install --global ReplaceText
+          dotnet tool install --global Duotify.ReplaceText
           ```
 
           ### 更新方式
 
           ```bash
-          dotnet tool update --global ReplaceText
+          dotnet tool update --global Duotify.ReplaceText
           ```
 
           ### 📦 套件連結
 
-          - [NuGet Gallery](https://www.nuget.org/packages/ReplaceText/${{ steps.get_version.outputs.VERSION }})
+          - [NuGet Gallery](https://www.nuget.org/packages/Duotify.ReplaceText/${{ steps.get_version.outputs.VERSION }})
           - [安裝指南](https://github.com/doggy8088/ReplaceText/blob/main/INSTALL.md)
 
           ### 📚 說明文件
@@ -118,4 +118,4 @@ jobs:
       run: |
         echo "✅ 套件已成功發佈到 NuGet.org"
         echo "📦 版本: ${{ steps.get_version.outputs.VERSION }}"
-        echo "🔗 套件連結: https://www.nuget.org/packages/ReplaceText/${{ steps.get_version.outputs.VERSION }}"
+        echo "🔗 套件連結: https://www.nuget.org/packages/Duotify.ReplaceText/${{ steps.get_version.outputs.VERSION }}"
