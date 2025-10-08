@@ -69,14 +69,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ReplaceText-Release
-        path: |
-          ReplaceText-win-x64.zip
-          ReplaceText-win-x86.zip
-          ReplaceText-linux-x64.zip
-          ReplaceText-osx-x64.zip
-          ReplaceText-osx-arm64.zip
-        retention-days: 90
+    # - name: Upload artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: ReplaceText-Release
+    #     path: |
+    #       ReplaceText-win-x64.zip
+    #       ReplaceText-win-x86.zip
+    #       ReplaceText-linux-x64.zip
+    #       ReplaceText-osx-x64.zip
+    #       ReplaceText-osx-arm64.zip
+    #     retention-days: 90
