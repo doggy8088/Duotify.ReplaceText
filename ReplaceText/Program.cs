@@ -71,6 +71,11 @@ namespace ReplaceText
         private static bool bModifyTextFile = false;
 
         /// <summary>
+        /// 是否僅修改指定的文字檔案 (僅限 TextExtensions 清單中的副檔名)
+        /// </summary>
+        private static bool bModifyTextFileOnly = false;
+
+        /// <summary>
         /// 讓 GBK (GB18030) 字集優先於 Big5 判斷
         /// </summary>
         private static bool bGBKFirst = false;
@@ -100,6 +105,14 @@ namespace ReplaceText
                 }
                 else if (item.ToUpper() == "/M" || item.ToLower() == "-m")
                 {
+                    bModifyTextFile = true;
+                    continue;
+                }
+                else if (item.ToUpper() == "/MO" || item.ToLower() == "-mo")
+                {
+                    // 僅針對指定的文字檔案進行轉換 (TextExtensions)
+                    // /MO 隱含 /M
+                    bModifyTextFileOnly = true;
                     bModifyTextFile = true;
                     continue;
                 }
@@ -170,13 +183,19 @@ namespace ReplaceText
             if (isDir)
             {
                 // 使用 EnumerateFiles 並以 extension 交叉比對，確保掃描與 IsIgnored / IsBinary 的判斷使用同一份清單
-                var allowedExts = new HashSet<string>(CodeExtensions, StringComparer.OrdinalIgnoreCase);
+                // 若啟用 /MO (僅修改指定文字檔案)，掃描清單僅包含 TextExtensions
+                var allowedExts = bModifyTextFileOnly
+                    ? new HashSet<string>(TextExtensions, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(CodeExtensions, StringComparer.OrdinalIgnoreCase);
 
-                if (bModifyTextFile)
+                if (!bModifyTextFileOnly && bModifyTextFile)
                 {
-                    // 當允許修改文字檔案時，加入文字類型副檔名到掃描清單
+                    // 當允許修改文字檔案時，加入文字類型副檔名到掃描清單 (但 /MO 優先)
                     allowedExts.UnionWith(TextExtensions);
                 }
+
+                // 先掃描並統計預計要處理的檔案數量，以便顯示進度
+                var candidates = new List<string>();
 
                 foreach (string filePath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
                 {
@@ -185,32 +204,74 @@ namespace ReplaceText
                     if (string.IsNullOrEmpty(ext))
                     {
                         // 無副檔名的檔案,若啟用 /U 參數則進行文字檔判斷
-                        if (bUnknownFileType && IsTextFile(filePath))
+                        if (bUnknownFileType && IsTextFile(filePath) && File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
                         {
-                            ProcessFile(filePath, oldValue, newValue);
+                            candidates.Add(filePath);
                         }
                         continue;
                     }
 
                     if (allowedExts.Contains(ext))
                     {
-                        ProcessFile(filePath, oldValue, newValue);
+                        if (File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
+                        {
+                            candidates.Add(filePath);
+                        }
                     }
                     else if (bUnknownFileType && !BinaryExtensions.Contains(ext) && IsTextFile(filePath))
                     {
                         // 啟用 /U 參數且不在二進位清單中,且通過文字檔判斷
-                        ProcessFile(filePath, oldValue, newValue);
+                        if (File.Exists(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
+                        {
+                            candidates.Add(filePath);
+                        }
                     }
                 }
 
-                //foreach (string filePath in files)
-                //{
-                //    ProcessFile(filePath, oldValue, newValue);
-                //}
+                // 顯示總數並逐一處理，將當前索引與總數傳給 ProcessFile 以顯示進度
+                int total = candidates.Count;
+                Console.WriteLine($"預計要處理 {total} 個檔案");
+
+                if (total == 0)
+                {
+                    Console.WriteLine("沒有符合條件的檔案可處理。");
+                }
+
+                int symbolCount = 0;
+
+                for (int i = 0; i < candidates.Count; i++)
+                {
+                    char result = ProcessFile(candidates[i], oldValue, newValue, i + 1, total);
+
+                    // 若為詳細模式則保留原本訊息, 否則以符號代表狀態
+                    // '.' = 未轉換, 'o' = 已轉換, 'x' = 錯誤
+                    if (!bVerbose)
+                    {
+                        Console.Write(result);
+                        symbolCount++;
+
+                        if (symbolCount % 50 == 0)
+                        {
+                            Console.WriteLine($" [{i + 1}/{total}]");
+                        }
+                    }
+                }
+
+                if (!bVerbose && symbolCount > 0 && symbolCount % 50 != 0)
+                {
+                    Console.WriteLine($" [{symbolCount}/{total}]");
+                }
             }
             else
             {
-                ProcessFile(path, oldValue, newValue);
+                // 單一檔案情況, 傳入進度資訊 (1/1)
+                char result = ProcessFile(path, oldValue, newValue, 1, 1);
+
+                if (!bVerbose)
+                {
+                    Console.Write(result);
+                    Console.WriteLine(" [1/1]");
+                }
             }
 
         }
@@ -218,6 +279,9 @@ namespace ReplaceText
         private static void ShowHelp()
         {
             Console.WriteLine("ReplaceText.exe /T /M /V /F /GBK /U <Directory|File>");
+            Console.WriteLine();
+            Console.WriteLine("/MO\t僅修改指定的文字檔案 (TextExtensions 清單中的副檔名) — 此選項隱含 /M");
+            Console.WriteLine("\t可用替代參數: -mo");
             Console.WriteLine();
             Console.WriteLine("/T\t測試執行模式,不會寫入檔案 (Dry Run)");
             Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔,僅修改 Visual Studio 程式相關檔案)");
@@ -228,258 +292,346 @@ namespace ReplaceText
             Console.WriteLine();
         }
 
-        private static void ProcessFile(string filePath, string? oldValue, string? newValue)
+        /// <summary>
+        /// 處理單一檔案的編碼轉換
+        /// </summary>
+        /// <returns>
+        /// '.' = 檔案未轉換（已是 UTF-8 或被跳過）
+        /// 'o' = 檔案已成功轉換為 UTF-8
+        /// 'x' = 處理失敗或發生錯誤
+        /// </returns>
+        private static char ProcessFile(string filePath, string? oldValue, string? newValue, int current = 0, int total = 0)
         {
-            if (File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
+            // 若傳入 total 且非詳細模式，啟用 progress-only 模式：只輸出 dot/x 而不輸出每個檔案的詳細訊息
+            bool progressOnly = (total > 0 && !bVerbose);
+
+            // 產生進度前綴 (用於 Verbose 模式)
+            string progressPrefix = (bVerbose && current > 0 && total > 0) ? $"[{current}/{total}] " : "";
+
+            try
             {
-                bool is_valid_charset = false;
-                string encoding = "UTF8";
-
-                string oldContent = "";
-
-                string oldContent_BIG5 = File.ReadAllText(filePath, Encoding.GetEncoding("Big5"));
-                string oldContent_BIG5_Only = GetAllBIG5Chars(filePath);
-
-                string oldContent_GBK = File.ReadAllText(filePath, Encoding.GetEncoding("GBK"));
-                string oldContent_GBK_Only = GetAllGBKChars(filePath);
-
-                string oldContent_ISO88591 = File.ReadAllText(filePath, Encoding.GetEncoding("ISO-8859-1"));
-                string oldContent_ISO88591_Only = GetAllISO88591Chars(filePath);
-
-                string oldContent_UTF8 = File.ReadAllText(filePath, Encoding.UTF8);
-                string oldContent_UTF8_Only = GetAllUTF8Chars(filePath);
-
-                string oldContent_Unicode = File.ReadAllText(filePath, Encoding.Unicode);
-
-                #region ...  判斷 UTF-16 與 UTF-8 編碼  ...
-
-                int b1 = 0;
-                int b2 = 0;
-                int b3 = 0;
-
-                using (FileStream fs = File.OpenRead(filePath))
+                if (File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
                 {
-                    if (fs.Length > 2)
+                    // 若啟用 /MO 選項, 僅對 TextExtensions 清單中的副檔名進行實際轉換
+                    string _ext_check = Path.GetExtension(filePath);
+                    if (bModifyTextFileOnly && (string.IsNullOrEmpty(_ext_check) || !TextExtensions.Contains(_ext_check)))
                     {
-                        b1 = fs.ReadByte();
-                        b2 = fs.ReadByte();
-                        b3 = fs.ReadByte();
+                        if (!progressOnly)
+                        {
+                            Console.Write(progressPrefix + StripCurrentPath(filePath));
+                            ConsoleWriteLineWithColor(" 已跳過 (僅限指定文字檔案進行轉換)", ConsoleColor.Gray);
+                        }
+
+                        return '.';
                     }
-                }
+                    bool is_valid_charset = false;
+                    string encoding = "UTF8";
 
-                // UTF-16 (BE) 的 BOM 字元 ( FE FF )
-                // http://en.wikipedia.org/wiki/Byte-order_mark
-                if (b1 == 0xFE && b2 == 0xFF)
-                {
-                    is_valid_charset = true;
+                    string oldContent = "";
 
-                    oldContent = oldContent_Unicode;
+                    string oldContent_BIG5 = File.ReadAllText(filePath, Encoding.GetEncoding("Big5"));
+                    string oldContent_BIG5_Only = GetAllBIG5Chars(filePath);
 
-                    encoding = "Unicode";
-                }
+                    string oldContent_GBK = File.ReadAllText(filePath, Encoding.GetEncoding("GBK"));
+                    string oldContent_GBK_Only = GetAllGBKChars(filePath);
 
-                // UTF-16 (LE) 的 BOM 字元 ( FF FE )
-                // http://en.wikipedia.org/wiki/Byte-order_mark
-                if (b1 == 0xFF && b2 == 0xFE)
-                {
-                    is_valid_charset = true;
+                    string oldContent_ISO88591 = File.ReadAllText(filePath, Encoding.GetEncoding("ISO-8859-1"));
+                    string oldContent_ISO88591_Only = GetAllISO88591Chars(filePath);
 
-                    oldContent = oldContent_Unicode;
+                    string oldContent_UTF8 = File.ReadAllText(filePath, Encoding.UTF8);
+                    string oldContent_UTF8_Only = GetAllUTF8Chars(filePath);
 
-                    encoding = "Unicode";
-                }
+                    string oldContent_Unicode = File.ReadAllText(filePath, Encoding.Unicode);
 
-                // UTF-8 的 BOM 字元 ( EF BB BF )
-                // http://zh.wikipedia.org/zh-tw/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
-                if (b1 == 0xEF && b2 == 0xBB && b3 == 0xBF)
-                {
-                    is_valid_charset = true;
+                    #region ...  判斷 UTF-16 與 UTF-8 編碼  ...
 
-                    oldContent = oldContent_UTF8;
+                    int b1 = 0;
+                    int b2 = 0;
+                    int b3 = 0;
 
-                    encoding = "UTF8";
-                }
+                    using (FileStream fs = File.OpenRead(filePath))
+                    {
+                        if (fs.Length > 2)
+                        {
+                            b1 = fs.ReadByte();
+                            b2 = fs.ReadByte();
+                            b3 = fs.ReadByte();
+                        }
+                    }
 
-                // 判斷沒有 BOM 的 UTF-8 字元
-                if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
-                {
-                    is_valid_charset = true;
-
-                    oldContent = oldContent_UTF8;
-
-                    encoding = "UTF8";
-                }
-
-                if (!is_valid_charset && oldContent_Unicode == oldContent_UTF8_Only)
-                {
-                    is_valid_charset = true;
-
-                    oldContent = oldContent_Unicode;
-
-                    encoding = "Unicode";
-                }
-
-                #endregion
-
-                if (bGBKFirst)
-                {
-                    #region ...  判斷 GBK 編碼  ...
-
-                    if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
+                    // UTF-16 (BE) 的 BOM 字元 ( FE FF )
+                    // http://en.wikipedia.org/wiki/Byte-order_mark
+                    if (b1 == 0xFE && b2 == 0xFF)
                     {
                         is_valid_charset = true;
 
-                        oldContent = oldContent_GBK;
+                        oldContent = oldContent_Unicode;
 
-                        encoding = "GBK";
+                        encoding = "Unicode";
+                    }
+
+                    // UTF-16 (LE) 的 BOM 字元 ( FF FE )
+                    // http://en.wikipedia.org/wiki/Byte-order_mark
+                    if (b1 == 0xFF && b2 == 0xFE)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_Unicode;
+
+                        encoding = "Unicode";
+                    }
+
+                    // UTF-8 的 BOM 字元 ( EF BB BF )
+                    // http://zh.wikipedia.org/zh-tw/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
+                    if (b1 == 0xEF && b2 == 0xBB && b3 == 0xBF)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_UTF8;
+
+                        encoding = "UTF8";
+                    }
+
+                    // 判斷沒有 BOM 的 UTF-8 字元
+                    if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_UTF8;
+
+                        encoding = "UTF8";
+                    }
+
+                    if (!is_valid_charset && oldContent_Unicode == oldContent_UTF8_Only)
+                    {
+                        is_valid_charset = true;
+
+                        oldContent = oldContent_Unicode;
+
+                        encoding = "Unicode";
                     }
 
                     #endregion
 
-                    #region ...  判斷 BIG5 編碼  ...
+                    if (bGBKFirst)
+                    {
+                        #region ...  判斷 GBK 編碼  ...
 
-                    if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                        if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
+                        {
+                            is_valid_charset = true;
+
+                            oldContent = oldContent_GBK;
+
+                            encoding = "GBK";
+                        }
+
+                        #endregion
+
+                        #region ...  判斷 BIG5 編碼  ...
+
+                        if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                        {
+                            is_valid_charset = true;
+
+                            oldContent = oldContent_BIG5;
+
+                            encoding = "BIG5";
+                        }
+
+                        #endregion
+
+                    }
+                    else
+                    {
+
+                        #region ...  判斷 BIG5 編碼  ...
+
+                        if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                        {
+                            is_valid_charset = true;
+
+                            oldContent = oldContent_BIG5;
+
+                            encoding = "BIG5";
+                        }
+
+                        #endregion
+
+                        #region ...  判斷 GBK 編碼  ...
+
+                        if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
+                        {
+                            is_valid_charset = true;
+
+                            oldContent = oldContent_GBK;
+
+                            encoding = "GBK";
+                        }
+
+                        #endregion
+
+                    }
+
+                    #region ...  判斷 ISO-8859-1 編碼  ...
+
+                    if (!is_valid_charset && oldContent_ISO88591 == oldContent_ISO88591_Only)
                     {
                         is_valid_charset = true;
 
-                        oldContent = oldContent_BIG5;
+                        oldContent = oldContent_ISO88591;
 
-                        encoding = "BIG5";
+                        encoding = "ISO-8859-1";
                     }
 
                     #endregion
 
+                    if (!is_valid_charset)
+                    {
+                        if (!progressOnly)
+                        {
+                            Console.Write(progressPrefix + StripCurrentPath(filePath));
+                            ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)", ConsoleColor.Yellow);
+                        }
+                        return 'x';
+                    }
+
+                    string newContent = oldContent;
+
+                    #region 執行字串取代動作
+
+                    if (!bTestRun && !string.IsNullOrEmpty(oldValue) && newValue != null)
+                    {
+                        newContent = oldContent.Replace(oldValue, newValue);
+                    }
+
+                    #endregion
+
+                    if (!string.IsNullOrEmpty(newContent))
+                    {
+                        if (oldContent != newContent)
+                        {
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteWithColor(" 寫入中(" + encoding + ")", ConsoleColor.Green);
+                            }
+
+                            if (!bTestRun)
+                            {
+                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                            }
+
+                            if (!progressOnly)
+                            {
+                                ConsoleWriteLineWithColor("done", ConsoleColor.Green);
+                            }
+                            return 'o';
+                        }
+                        else if (encoding == "BIG5")
+                        {
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
+                            }
+
+                            if (!bTestRun)
+                            {
+                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                            }
+                            return 'o';
+                        }
+                        else if (encoding == "GBK")
+                        {
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor(" (GBK -> UTF-8)", ConsoleColor.DarkGreen);
+                            }
+
+                            if (!bTestRun)
+                            {
+                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                            }
+                            return 'o';
+                        }
+                        else if (encoding == "Unicode")
+                        {
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
+                            }
+
+                            if (!bTestRun)
+                            {
+                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                            }
+                            return 'o';
+                        }
+                        else if (encoding == "ISO-8859-1")
+                        {
+                            if (!progressOnly)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor(" (ISO-8859-1 -> UTF-8)", ConsoleColor.Green);
+                            }
+
+                            if (!bTestRun)
+                            {
+                                File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                            }
+                            return 'o';
+                        }
+                        else
+                        {
+                            // 檔案已經是 UTF-8 編碼，不需要轉換
+                            if (!progressOnly && bVerbose)
+                            {
+                                Console.Write(progressPrefix + StripCurrentPath(filePath));
+                                ConsoleWriteLineWithColor(" 檔案為 UTF-8 編碼，直接跳過", ConsoleColor.Gray);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 檔案內容為空
+                        if (!progressOnly && bVerbose)
+                        {
+                            Console.Write(progressPrefix + StripCurrentPath(filePath));
+                            ConsoleWriteLineWithColor(" 檔案內容為空，直接跳過", ConsoleColor.Gray);
+                        }
+                    }
                 }
                 else
                 {
-
-                    #region ...  判斷 BIG5 編碼  ...
-
-                    if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                    if (!progressOnly && bVerbose)
                     {
-                        is_valid_charset = true;
-
-                        oldContent = oldContent_BIG5;
-
-                        encoding = "BIG5";
+                        Console.Write(progressPrefix + StripCurrentPath(filePath));
+                        Console.WriteLine(" 檔案不存在、檔案在忽略清單目錄中或此檔案為已知的二進位檔案");
                     }
-
-                    #endregion
-
-                    #region ...  判斷 GBK 編碼  ...
-
-                    if (!is_valid_charset && oldContent_GBK == oldContent_GBK_Only)
-                    {
-                        is_valid_charset = true;
-
-                        oldContent = oldContent_GBK;
-
-                        encoding = "GBK";
-                    }
-
-                    #endregion
-
                 }
 
-                #region ...  判斷 ISO-8859-1 編碼  ...
-
-                if (!is_valid_charset && oldContent_ISO88591 == oldContent_ISO88591_Only)
+                // 所有其他情況（例如空檔案、UTF-8 已處理等）
+                if (!progressOnly && bVerbose)
                 {
-                    is_valid_charset = true;
-
-                    oldContent = oldContent_ISO88591;
-
-                    encoding = "ISO-8859-1";
+                    // 這裡可能是空檔案或其他未明確處理的情況
+                    // 為了除錯，先不輸出額外訊息，直接返回
                 }
 
-                #endregion
-
-                if (!is_valid_charset)
-                {
-                    Console.Write(StripCurrentPath(filePath));
-                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5、GBK與ISO-8859-1編碼)", ConsoleColor.Yellow);
-                    return;
-                }
-
-                string newContent = oldContent;
-
-                #region 執行字串取代動作
-
-                if (!bTestRun && !string.IsNullOrEmpty(oldValue) && newValue != null)
-                {
-                    newContent = oldContent.Replace(oldValue, newValue);
-                }
-
-                #endregion
-
-                if (!string.IsNullOrEmpty(newContent))
-                {
-                    if (oldContent != newContent)
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteWithColor(" 寫入中(" + encoding + ")", ConsoleColor.Green);
-
-                        if (!bTestRun)
-                        {
-                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                        }
-
-                        ConsoleWriteLineWithColor("done", ConsoleColor.Green);
-                    }
-                    else if (encoding == "BIG5")
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
-
-                        if (!bTestRun)
-                        {
-                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                        }
-                    }
-                    else if (encoding == "GBK")
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteLineWithColor(" (GBK -> UTF-8)", ConsoleColor.DarkGreen);
-
-                        if (!bTestRun)
-                        {
-                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                        }
-                    }
-                    else if (encoding == "Unicode")
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
-
-                        if (!bTestRun)
-                        {
-                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                        }
-                    }
-                    else if (encoding == "ISO-8859-1")
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteLineWithColor(" (ISO-8859-1 -> UTF-8)", ConsoleColor.Green);
-
-                        if (!bTestRun)
-                        {
-                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
-                        }
-                    }
-                    else if (bVerbose)
-                    {
-                        Console.Write(StripCurrentPath(filePath));
-                        ConsoleWriteLineWithColor(" 檔案為 UTF-8 編碼，直接跳過", ConsoleColor.Gray);
-                    }
-                }
+                return '.';
             }
-            else
+            catch (Exception ex)
             {
-                if (bVerbose)
+                // 例外視為處理失敗，Main 會依回傳值輸出 'x'
+                if (!progressOnly)
                 {
-                    Console.Write(StripCurrentPath(filePath));
-                    Console.WriteLine(" 檔案不存在、檔案在忽略清單目錄中或此檔案為已知的二進位檔案");
+                    Console.Write(progressPrefix + StripCurrentPath(filePath));
+                    ConsoleWriteLineWithColor(" 例外錯誤: " + ex.Message, ConsoleColor.Red);
                 }
+
+                return 'x';
             }
         }
 

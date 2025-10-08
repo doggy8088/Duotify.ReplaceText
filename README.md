@@ -152,6 +152,11 @@ replacetext /V /F /path/to/your/project
 
 # GBK 優先模式(處理簡體中文)
 replacetext /GBK /path/to/your/project
+
+# 僅處理指定文字檔案（在 TextExtensions 清單內，例如 .txt、.md 等）
+replacetext /MO /path/to/your/project
+# 使用簡短別名
+replacetext -mo /path/to/your/project
 ```
 
 ### 作為獨立執行檔使用
@@ -163,6 +168,8 @@ ReplaceText.exe [選項] <目錄|檔案> [舊字串] [新字串]
 ### 選項
 
 - `/T` - 測試執行模式，不會寫入檔案 (Dry Run)
+- `/MO` - 僅修改指定的文字檔案（僅處理 `TextExtensions` 清單中的副檔名）。此選項會隱含 `/M`。
+- `/mo` - `/MO` 的簡短別名。
 - `/M` - 修改已知的文字檔案 (預設會跳過 .txt 和 .csv 檔案)
 - `/V` - 顯示詳細輸出模式，會顯示所有掃描的檔案清單
 - `/F` - 顯示完整的檔案路徑 (預設僅顯示相對路徑)
@@ -224,6 +231,8 @@ ReplaceText.exe /U C:\MyProject
 
 - .txt
 - .csv
+
+注意：使用 `/MO`（或 `-mo`）會隱含 `/M`，但 `/MO` 僅會針對 `TextExtensions` 清單中的副檔名進行處理（會跳過預設的程式碼/專案檔案副檔名）。
 
 ## 開發
 
