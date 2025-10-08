@@ -1,0 +1,539 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Text.RegularExpressions;
+
+namespace ReplaceText
+{
+    class Program
+    {
+        /// <summary>
+        /// 是否為測試執行模式
+        /// </summary>
+        private static bool bTestRun = false;
+
+        /// <summary>
+        /// 是否為詳細輸出模式
+        /// </summary>
+        private static bool bVerbose = false;
+
+        /// <summary>
+        /// 是否顯示完整路徑 (預設為輸出相對路徑)
+        /// </summary>
+        private static bool bShowFullPath = false;
+
+        /// <summary>
+        /// 是否替代文字檔案 (預設會跳過文字資料檔，僅修改程式相關檔案)
+        /// </summary>
+        private static bool bModifyTextFile = false;
+
+        private static void Main(string[] args)
+        {
+            int argCounter = 0;
+            int curCounter = 0;
+
+            string path = null;
+            string oldValue = null;
+            string newValue = null;
+
+            foreach (string item in args)
+            {
+                if (item.ToUpper() == "/T" || item.ToLower() == "-t")
+                {
+                    bTestRun = true;
+                    continue;
+                }
+                else if (item.ToUpper() == "/M" || item.ToLower() == "-m")
+                {
+                    bModifyTextFile = true;
+                    continue;
+                }
+                else if (item.ToUpper() == "/FULLPATH" || item.ToLower() == "-f")
+                {
+                    bShowFullPath = true;
+                    continue;
+                }
+                else if (item.ToUpper() == "/V" || item.ToLower() == "-v")
+                {
+                    bShowFullPath = true;
+                    bVerbose = true;
+                    continue;
+                }
+                else
+                {
+                    switch (argCounter)
+                    {
+                        case 0:
+                            path = item;
+                            argCounter++;
+                            break;
+                        case 1:
+                            oldValue = item;
+                            argCounter++;
+                            break;
+                        case 2:
+                            newValue = item;
+                            argCounter++;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (File.Exists(path) && !IsBinaryFileExtenstion(path) && !IsSkipFolder(path) && !IsIgnoredFileExtenstion(path))
+            {
+                bool is_valid_charset = false;
+                string encoding = "UTF8";
+
+                string oldContent = "";
+
+                string oldContent_BIG5 = File.ReadAllText(path, Encoding.GetEncoding("Big5"));
+                string oldContent_BIG5_Only = GetAllBIG5Chars(path);
+
+                string oldContent_UTF8 = File.ReadAllText(path, Encoding.UTF8);
+                string oldContent_UTF8_Only = GetAllUTF8Chars(path);
+
+                string oldContent_Unicode = File.ReadAllText(path, Encoding.Unicode);
+                //string oldContent_Unicode_Only = GetAllUnicodeChars(path);
+
+                // TODO: UTF-16 (BE) -- BOM: FE FF
+                // TODO: UTF-16 (LE) -- BOM: FF FE
+
+
+                // 判斷 UTF-16
+
+                int b1 = 0;
+                int b2 = 0;
+
+                using (FileStream fs = File.OpenRead(path))
+                {
+                    if (fs.Length > 2)
+                    {
+                        b1 = fs.ReadByte();
+                        b2 = fs.ReadByte();
+                    }
+                }
+
+                // UTF-16 (BE) 的 BOM 字元 ( FE FF )
+                // http://en.wikipedia.org/wiki/Byte-order_mark
+                if (b1 == 0xFE && b2 == 0xFF)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_Unicode;
+
+                    encoding = "Unicode";
+                }
+
+                // UTF-16 (LE) 的 BOM 字元 ( FF FE )
+                // http://en.wikipedia.org/wiki/Byte-order_mark
+                if (b1 == 0xFF && b2 == 0xFE)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_Unicode;
+
+                    encoding = "Unicode";
+                }
+
+
+                if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_UTF8;
+
+                    encoding = "UTF8";
+                }
+
+                if (!is_valid_charset && oldContent_Unicode == oldContent_UTF8_Only)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_Unicode;
+
+                    encoding = "Unicode";
+                }
+
+                if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_BIG5;
+
+                    encoding = "BIG5";
+                }
+
+                if (!is_valid_charset)
+                {
+                    Console.Write(StripCurrentPath(path));
+                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode與Big5編碼)", ConsoleColor.Yellow);
+                    return;
+                }
+
+                string newContent = oldContent;
+
+                if (!bTestRun && !String.IsNullOrEmpty(oldValue) && newValue != null)
+                {
+                    newContent = oldContent.Replace(oldValue, newValue);
+                }
+
+                if (!String.IsNullOrEmpty(newContent))
+                {
+                    if (oldContent != newContent)
+                    {
+                        Console.Write(StripCurrentPath(path));
+                        ConsoleWriteWithColor(" 寫入中(" + encoding + ")", ConsoleColor.Green);
+
+                        if (!bTestRun)
+                        {
+                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                        }
+
+                        ConsoleWriteWithColor("done", ConsoleColor.Green);
+                    }
+                    else if (encoding == "BIG5")
+                    {
+                        Console.Write(StripCurrentPath(path));
+                        ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
+
+                        if (!bTestRun)
+                        {
+                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                        }
+                    }
+                    else if (encoding == "Unicode")
+                    {
+                        Console.Write(StripCurrentPath(path));
+                        ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
+
+                        if (!bTestRun)
+                        {
+                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                        }
+                    }
+                    else if (bVerbose)
+                    {
+                        Console.Write(StripCurrentPath(path));
+                        ConsoleWriteLineWithColor(" 檔案為 UTF-8 編碼，直接跳過", ConsoleColor.Gray);
+                    }
+                }
+            }
+            else
+            {
+                if (bVerbose)
+                {
+                    Console.Write(StripCurrentPath(path));
+                    Console.WriteLine(" 檔案不存在、檔案在忽略清單目錄中或此檔案為已知的二進位檔案");
+                }
+            }
+        }
+
+        private static string StripCurrentPath(string path)
+        {
+            if (bShowFullPath)
+            {
+                return path;
+            }
+            else
+            {
+                return path.Replace(Environment.CurrentDirectory, "");
+            }
+        }
+
+        private static void ConsoleWriteLineWithColor(string msg, ConsoleColor color)
+        {
+            ConsoleColor tmpColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.WriteLine(msg);
+            Console.ForegroundColor = tmpColor;
+        }
+
+        private static void ConsoleWriteWithColor(string msg, ConsoleColor color)
+        {
+            ConsoleColor tmpColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.Write(msg);
+            Console.ForegroundColor = tmpColor;
+        }
+
+        private static string ReadAllChars(string path)
+        {
+            byte[] _bytes = File.ReadAllBytes(path);
+
+            List<char> _cList = new List<char>();
+
+            foreach (byte b in _bytes)
+            {
+                _cList.Add((char)b);
+            }
+
+            return new string(_cList.ToArray());
+        }
+
+        private static string GetAllBIG5Chars(string path)
+        {
+            // http://www.ascc.sinica.edu.tw/nl/85/1208/02.txt
+            // http://publib.boulder.ibm.com/infocenter/aix/v6r1/index.jsp?topic=/com.ibm.aix.nls/doc/nlsgdrf/code_range_big5.htm
+            // http://ash.jp/code/cn/big5tbl.htm
+            // http://kura.hanazono.ac.jp/paper/codes.html
+
+            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+                                 | [\xA1-\xFE][\x40-\x7E\xA1-\xFE]    # big5 range
+                                 ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            StringBuilder sb = new StringBuilder();
+
+            string data = ReadAllChars(path);
+
+            foreach (Match mx in rx.Matches(data))
+            {
+                byte[] bb = new byte[mx.Value.Length];
+
+                for (int i = 0; i < mx.Value.Length; i++)
+                {
+                    bb[i] = (byte)mx.Value[i];
+                }
+
+                string a = Encoding.GetEncoding("Big5").GetString(bb);
+
+                sb.Append(a);
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetAllUnicodeChars(string path)
+        {
+            // From http://w3.org/International/questions/qa-forms-utf-8.html
+            // It will return true if $p_string is UTF-8, and false otherwise.
+
+            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+                                  | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
+                                  |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
+                                  | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}  # straight 3-byte
+                                  |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
+                                  |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
+                                  | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+                                  |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
+                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            StringBuilder sb = new StringBuilder();
+
+            string data = ReadAllChars(path);
+
+            foreach (Match mx in rx.Matches(data))
+            {
+                byte[] bb = new byte[mx.Value.Length];
+
+                for (int i = 0; i < mx.Value.Length; i++)
+                {
+                    bb[i] = (byte)mx.Value[i];
+                }
+
+                // UTF-16 (BE) 的 BOM 字元 ( FE FF )
+                // http://en.wikipedia.org/wiki/Byte-order_mark
+                if (bb[0] == 0xFE && bb[1] == 0xFF)
+                {
+                    continue;
+                }
+
+                // UTF-16 (LE) 的 BOM 字元 ( FF FE )
+                // http://en.wikipedia.org/wiki/Byte-order_mark
+                if (bb[0] == 0xFF && bb[1] == 0xFE)
+                {
+                    continue;
+                }
+
+                string a = Encoding.UTF8.GetString(bb);
+
+                sb.Append(a);
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetAllUTF8Chars(string path)
+        {
+            // From http://w3.org/International/questions/qa-forms-utf-8.html
+            // It will return true if $p_string is UTF-8, and false otherwise.
+
+            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+                                  | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
+                                  |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
+                                  | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}  # straight 3-byte
+                                  |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
+                                  |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
+                                  | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+                                  |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
+                                  ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            StringBuilder sb = new StringBuilder();
+
+            string data = ReadAllChars(path);
+
+            foreach (Match mx in rx.Matches(data))
+            {
+                byte[] bb = new byte[mx.Value.Length];
+
+                for (int i = 0; i < mx.Value.Length; i++)
+                {
+                    bb[i] = (byte)mx.Value[i];
+                }
+
+                // UTF-8 的 BOM 字元 ( EF BB BF )
+                // http://zh.wikipedia.org/zh-tw/%E4%BD%8D%E5%85%83%E7%B5%84%E9%A0%86%E5%BA%8F%E8%A8%98%E8%99%9F
+                if (bb[0] == 0xEF && bb[1] == 0xBB && bb[2] == 0xBF)
+                {
+                    continue;
+                }
+
+                string a = Encoding.UTF8.GetString(bb);
+
+                sb.Append(a);
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 判斷是否為已知的二進位檔案
+        /// </summary>
+        /// <seealso cref="http://www.file-extensions.org/filetype/extension/name/binary-files"/>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static bool IsBinaryFileExtenstion(string path)
+        {
+            string ext = Path.GetExtension(path);
+
+            switch (ext.ToLower())
+            {
+                case ".exe":
+                case ".dll":
+                case ".pdb":
+                case ".suo":
+
+                case ".cer":
+                case ".pfx":
+
+                case ".user":
+                case ".bak":
+                case ".cab":
+                case ".0":
+                case ".1":
+                case ".bc":
+                case ".bc!":
+                case ".bdf":
+                case ".bgf":
+                case ".bi":
+                case ".bin":
+                case ".ctx":
+                case ".com":
+                case ".dmg":
+                case ".dmt":
+                case ".db":
+                case ".zip":
+                case ".rar":
+                case ".7z":
+                case ".gz":
+                case ".flv":
+                case ".fla":
+                case ".swf":
+
+                case ".doc":
+                case ".docx":
+                case ".ppt":
+                case ".pptx":
+                case ".xls":
+                case ".xlsx":
+                case ".pdf":
+                case ".vsd":
+                case ".chm":
+                case ".rp":
+                case ".cp":
+                case ".xmind":
+
+                case ".cache":
+                case ".resources":
+                case ".licenses":
+                case ".SIS":
+
+                case ".wmv":
+                case ".avi":
+                case ".mp3":
+                case ".mp4":
+
+                case ".mdf":
+                case ".ldf":
+
+                case ".msg":
+
+                case ".jpg":
+                case ".gif":
+                case ".png":
+                case ".bmp":
+                case ".tif":
+                case ".psd":
+                case ".ai":
+                case ".ico":
+
+                case ".ttf":
+                case ".ttc":
+                    return true;
+                    break;
+                default:
+                    return false;
+                    break;
+            }
+
+        }
+
+        /// <summary>
+        /// 判斷是否為已知的忽略文字檔案
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static bool IsIgnoredFileExtenstion(string path)
+        {
+            if (!bModifyTextFile)
+            {
+                string ext = Path.GetExtension(path);
+
+                switch (ext.ToLower())
+                {
+                    case ".csv":
+                    case ".txt":
+                        return true;
+                        break;
+                    default:
+                        return false;
+                        break;
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+        private static bool IsSkipFolder(string path)
+        {
+            if (path.ToLower().EndsWith(".bat")
+                || path.ToLower().Contains(@"\.svn\") || path.ToLower().Contains(@"\_svn\") 
+                // 跳過一些 zh-cn 的檔案，因為這些可能就是簡體文字，不應該用 Big5 轉換成 UTF-8！
+                || path.ToLower().Contains(@"zh-cn")
+                || (path.ToLower().EndsWith(".js") && path.ToLower().Contains("lang"))
+                )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+}
