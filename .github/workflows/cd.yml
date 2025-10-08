@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main # 當 main 分支有新 commit 時觸發
+  release:
+    types: [published]
   workflow_dispatch:  # 允許手動觸發
 
 permissions:
@@ -19,6 +21,13 @@ jobs:
   publish:
     name: Build and Publish to NuGet
     runs-on: ubuntu-latest
+    # Expose whether this job created a Release and the resolved version so
+    # downstream jobs can act (e.g. build platform binaries and attach
+    # release assets) either when this workflow created the Release or when
+    # the workflow is triggered by a release event.
+    outputs:
+      release_created: ${{ steps.set_release_created.outputs.release_created }}
+      version: ${{ steps.get_version.outputs.VERSION }}
 
     steps:
     - name: 📥 Checkout 程式碼
@@ -164,3 +173,74 @@ jobs:
         echo "✅ 套件已成功發佈到 NuGet.org"
         echo "📦 版本: ${{ steps.get_version.outputs.VERSION }}"
         echo "🔗 套件連結: https://www.nuget.org/packages/Duotify.ReplaceText/${{ steps.get_version.outputs.VERSION }}"
+
+  release_builds:
+    name: Build and Release Platform Binaries
+    runs-on: windows-latest
+    needs: publish
+    # Run this job either when the workflow was triggered by a GitHub Release
+    # event, or when the publish job created a Release as part of this run.
+    if: ${{ github.event_name == 'release' || needs.publish.outputs.release_created == 'true' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_PATH }} --no-restore --configuration Release
+
+    - name: Publish for Windows x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x64
+
+    - name: Publish for Windows x86
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r win-x86 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/win-x86
+
+    - name: Publish for Linux x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/linux-x64
+
+    - name: Publish for macOS x64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-x64
+
+    - name: Publish for macOS ARM64
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./publish/osx-arm64
+
+    - name: Create ZIP archives
+      run: |
+        Compress-Archive -Path ./publish/win-x64/* -DestinationPath ./ReplaceText-win-x64.zip
+        Compress-Archive -Path ./publish/win-x86/* -DestinationPath ./ReplaceText-win-x86.zip
+        Compress-Archive -Path ./publish/linux-x64/* -DestinationPath ./ReplaceText-linux-x64.zip
+        Compress-Archive -Path ./publish/osx-x64/* -DestinationPath ./ReplaceText-osx-x64.zip
+        Compress-Archive -Path ./publish/osx-arm64/* -DestinationPath ./ReplaceText-osx-arm64.zip
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        # Determine which tag to target: when triggered by a release event
+        # use the release's tag name; otherwise use the tag we created in
+        # the publish job (v{version}).
+        tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || format('v{0}', needs.publish.outputs.version) }}
+        files: |
+          ReplaceText-win-x64.zip
+          ReplaceText-win-x86.zip
+          ReplaceText-linux-x64.zip
+          ReplaceText-osx-x64.zip
+          ReplaceText-osx-arm64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # When we created a Release in this job, mark a job-level output so
+    # other jobs can detect it. This step only runs when the check determined
+    # the version did not already exist and we therefore created the Release.
+    - name: "🔖 設定 release_created 輸出 (讓後續 job 知道已建立 Release)"
+      id: set_release_created
+      if: steps.check_nuget.outputs.exists == 'false'
+      run: |
+        echo "release_created=true" >> $GITHUB_OUTPUT
