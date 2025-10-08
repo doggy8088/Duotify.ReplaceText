@@ -13,8 +13,8 @@
     <Company>多奇數位創意有限公司</Company>
     <Product>ReplaceText</Product>
     <Copyright>Copyright © Will 保哥 2010-2025</Copyright>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <FileVersion>1.0.3.0</FileVersion>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
 
     <!-- .NET Global Tool 設定 -->
     <PackAsTool>true</PackAsTool>
@@ -23,7 +23,7 @@
 
     <!-- NuGet 套件資訊 -->
     <PackageId>Duotify.ReplaceText</PackageId>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Authors>Will 保哥</Authors>
     <Description>一個強大的文字編碼轉換與字串替換工具，專為處理多種編碼格式的文字檔案而設計。支援 UTF-8、Unicode、Big5、GBK、ISO-8859-1 等編碼格式的自動偵測與轉換。自動套用 .gitignore 規則，避免意外轉換不應處理的檔案。</Description>
     <PackageProjectUrl>https://github.com/doggy8088/ReplaceText</PackageProjectUrl>
@@ -32,7 +32,7 @@
     <PackageTags>encoding;utf8;big5;gbk;conversion;text;replace;tool;duotify</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>v1.0.3: 首次以 Duotify.ReplaceText 發佈。升級至 .NET 8.0，支援 .NET Global Tool，改進編碼偵測能力，新增 .gitignore 自動支援功能。</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.0.4: 首次以 Duotify.ReplaceText 發佈。升級至 .NET 8.0，支援 .NET Global Tool，改進編碼偵測能力，新增 .gitignore 自動支援功能。</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
