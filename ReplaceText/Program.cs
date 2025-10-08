@@ -25,7 +25,7 @@ namespace ReplaceText
         private static bool bShowFullPath = false;
 
         /// <summary>
-        /// 是否替代文字檔案 (預設會跳過文字資料檔，僅修改程式相關檔案)
+        /// 是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 2010 程式相關檔案)
         /// </summary>
         private static bool bModifyTextFile = false;
 
@@ -37,6 +37,8 @@ namespace ReplaceText
             string path = null;
             string oldValue = null;
             string newValue = null;
+
+            #region Argument Checking
 
             foreach (string item in args)
             {
@@ -50,7 +52,7 @@ namespace ReplaceText
                     bModifyTextFile = true;
                     continue;
                 }
-                else if (item.ToUpper() == "/FULLPATH" || item.ToLower() == "-f")
+                else if (item.ToUpper() == "/F" || item.ToUpper() == "/FULLPATH" || item.ToLower() == "-f")
                 {
                     bShowFullPath = true;
                     continue;
@@ -83,20 +85,74 @@ namespace ReplaceText
                 }
             }
 
-            if (File.Exists(path) && !IsBinaryFileExtenstion(path) && !IsSkipFolder(path) && !IsIgnoredFileExtenstion(path))
+            if (String.IsNullOrEmpty(path))
+            {
+                ShowHelp();
+                return;
+            }
+
+            #endregion
+
+            bool isDir = ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory);
+
+            if (isDir)
+            {
+                List<string> files = new List<string>();
+
+                string valid_file_exts = "*.sln *.vb *.cs *.jsl *.xsd *.settings *.htm *.html *.aspx *.ascx *.ashx *.master *.xslt .rpt *.resx *.config *.cd  *.rdlc *.js *.vbs *.wsf *.css *.sitemap *.skin *.browser *.disco *.wsdl *.discomap *.asa *.asp *.as *.asmx *.webinfo *.wdproj *.csproj *.vbproj *.xsl";
+
+                if (bModifyTextFile)
+                {
+                    valid_file_exts += " *.txt *.csv";
+                }
+
+                foreach (var searchPattern in valid_file_exts.Split(' '))
+                {
+                    foreach (string filePath in Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
+                    {
+                        ProcessFile(filePath, oldValue, newValue);
+                    }
+                }
+
+                //foreach (string filePath in files)
+                //{
+                //    ProcessFile(filePath, oldValue, newValue);
+                //}
+            }
+            else
+            {
+                ProcessFile(path, oldValue, newValue);
+            }
+
+        }
+
+        private static void ShowHelp()
+        {
+            Console.WriteLine("ReplaceText.exe /T /M /V /F <Directory|File>");
+            Console.WriteLine();
+            Console.WriteLine("/T\t測試執行模式，不會寫入檔案 (Dry Run)");
+            Console.WriteLine("/M\t是否修改已知的文字檔案 (預設會跳過文字資料檔，僅修改 Visual Studio 2010 程式相關檔案)");
+            Console.WriteLine("/V\t顯示詳細輸出模式，會顯示所有掃描的檔案清單");
+            Console.WriteLine("/F\t顯示完整的檔案路徑(預設僅顯示相對路徑)");
+            Console.WriteLine();
+        }
+
+        private static void ProcessFile(string filePath, string oldValue, string newValue)
+        {
+            if (File.Exists(filePath) && !IsBinaryFileExtenstion(filePath) && !IsSkipFolder(filePath) && !IsIgnoredFileExtenstion(filePath))
             {
                 bool is_valid_charset = false;
                 string encoding = "UTF8";
 
                 string oldContent = "";
 
-                string oldContent_BIG5 = File.ReadAllText(path, Encoding.GetEncoding("Big5"));
-                string oldContent_BIG5_Only = GetAllBIG5Chars(path);
+                string oldContent_BIG5 = File.ReadAllText(filePath, Encoding.GetEncoding("Big5"));
+                string oldContent_BIG5_Only = GetAllBIG5Chars(filePath);
 
-                string oldContent_UTF8 = File.ReadAllText(path, Encoding.UTF8);
-                string oldContent_UTF8_Only = GetAllUTF8Chars(path);
+                string oldContent_UTF8 = File.ReadAllText(filePath, Encoding.UTF8);
+                string oldContent_UTF8_Only = GetAllUTF8Chars(filePath);
 
-                string oldContent_Unicode = File.ReadAllText(path, Encoding.Unicode);
+                string oldContent_Unicode = File.ReadAllText(filePath, Encoding.Unicode);
                 //string oldContent_Unicode_Only = GetAllUnicodeChars(path);
 
                 // TODO: UTF-16 (BE) -- BOM: FE FF
@@ -108,7 +164,7 @@ namespace ReplaceText
                 int b1 = 0;
                 int b2 = 0;
 
-                using (FileStream fs = File.OpenRead(path))
+                using (FileStream fs = File.OpenRead(filePath))
                 {
                     if (fs.Length > 2)
                     {
@@ -169,7 +225,7 @@ namespace ReplaceText
 
                 if (!is_valid_charset)
                 {
-                    Console.Write(StripCurrentPath(path));
+                    Console.Write(StripCurrentPath(filePath));
                     ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode與Big5編碼)", ConsoleColor.Yellow);
                     return;
                 }
@@ -185,39 +241,39 @@ namespace ReplaceText
                 {
                     if (oldContent != newContent)
                     {
-                        Console.Write(StripCurrentPath(path));
+                        Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteWithColor(" 寫入中(" + encoding + ")", ConsoleColor.Green);
 
                         if (!bTestRun)
                         {
-                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
                         }
 
                         ConsoleWriteWithColor("done", ConsoleColor.Green);
                     }
                     else if (encoding == "BIG5")
                     {
-                        Console.Write(StripCurrentPath(path));
+                        Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteLineWithColor(" (BIG5 -> UTF-8)", ConsoleColor.Green);
 
                         if (!bTestRun)
                         {
-                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
                         }
                     }
                     else if (encoding == "Unicode")
                     {
-                        Console.Write(StripCurrentPath(path));
+                        Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
 
                         if (!bTestRun)
                         {
-                            File.WriteAllText(path, newContent, Encoding.UTF8);
+                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
                         }
                     }
                     else if (bVerbose)
                     {
-                        Console.Write(StripCurrentPath(path));
+                        Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteLineWithColor(" 檔案為 UTF-8 編碼，直接跳過", ConsoleColor.Gray);
                     }
                 }
@@ -226,12 +282,11 @@ namespace ReplaceText
             {
                 if (bVerbose)
                 {
-                    Console.Write(StripCurrentPath(path));
+                    Console.Write(StripCurrentPath(filePath));
                     Console.WriteLine(" 檔案不存在、檔案在忽略清單目錄中或此檔案為已知的二進位檔案");
                 }
             }
         }
-
         private static string StripCurrentPath(string path)
         {
             if (bShowFullPath)
