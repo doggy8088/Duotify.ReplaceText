@@ -654,7 +654,8 @@ namespace ReplaceText
                         encoding = "UTF8";
                     }
 
-                    if (bDebugMode) {
+                    if (bDebugMode)
+                    {
                         // Console.WriteLine($"[{filePath}] 檔案前3個位元組: {b1:X2} {b2:X2} {b3:X2}");
                         // Console.WriteLine($"[{filePath}] oldContent_UTF8 == oldContent_UTF8_Only: {oldContent_UTF8 == oldContent_UTF8_Only}");
                         // Console.WriteLine($"[{filePath}] oldContent_UTF8.Length: {oldContent_UTF8.Length}");
