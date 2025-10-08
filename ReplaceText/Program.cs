@@ -149,6 +149,9 @@ namespace ReplaceText
                 string oldContent_BIG5 = File.ReadAllText(filePath, Encoding.GetEncoding("Big5"));
                 string oldContent_BIG5_Only = GetAllBIG5Chars(filePath);
 
+                string oldContent_ISO88591 = File.ReadAllText(filePath, Encoding.GetEncoding("ISO-8859-1"));
+                string oldContent_ISO88591_Only = GetAllISO88591Chars(filePath);
+
                 string oldContent_UTF8 = File.ReadAllText(filePath, Encoding.UTF8);
                 string oldContent_UTF8_Only = GetAllUTF8Chars(filePath);
 
@@ -159,7 +162,8 @@ namespace ReplaceText
                 // TODO: UTF-16 (LE) -- BOM: FF FE
 
 
-                // 判斷 UTF-16
+
+                #region ...  判斷 UTF-16 與 UTF-8 編碼  ...
 
                 int b1 = 0;
                 int b2 = 0;
@@ -195,7 +199,6 @@ namespace ReplaceText
                     encoding = "Unicode";
                 }
 
-
                 if (!is_valid_charset && oldContent_UTF8 == oldContent_UTF8_Only)
                 {
                     is_valid_charset = true;
@@ -214,6 +217,10 @@ namespace ReplaceText
                     encoding = "Unicode";
                 }
 
+                #endregion
+
+                #region ...  判斷 BIG5 編碼  ...
+
                 if (!is_valid_charset && oldContent_BIG5 == oldContent_BIG5_Only)
                 {
                     is_valid_charset = true;
@@ -223,19 +230,38 @@ namespace ReplaceText
                     encoding = "BIG5";
                 }
 
+                #endregion
+
+                #region ...  判斷 ISO-8859-1 編碼  ...
+
+                if (!is_valid_charset && oldContent_ISO88591 == oldContent_ISO88591_Only)
+                {
+                    is_valid_charset = true;
+
+                    oldContent = oldContent_ISO88591;
+
+                    encoding = "ISO-8859-1";
+                }
+
+                #endregion
+
                 if (!is_valid_charset)
                 {
                     Console.Write(StripCurrentPath(filePath));
-                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode與Big5編碼)", ConsoleColor.Yellow);
+                    ConsoleWriteLineWithColor(" 含無效文字或錯誤編碼(僅支援UTF-8、Unicode、Big5與ISO-8859-1編碼)", ConsoleColor.Yellow);
                     return;
                 }
 
                 string newContent = oldContent;
 
+                #region 執行字串取代動作
+
                 if (!bTestRun && !String.IsNullOrEmpty(oldValue) && newValue != null)
                 {
                     newContent = oldContent.Replace(oldValue, newValue);
                 }
+
+                #endregion
 
                 if (!String.IsNullOrEmpty(newContent))
                 {
@@ -265,6 +291,16 @@ namespace ReplaceText
                     {
                         Console.Write(StripCurrentPath(filePath));
                         ConsoleWriteLineWithColor(" (Unicode -> UTF-8)", ConsoleColor.Green);
+
+                        if (!bTestRun)
+                        {
+                            File.WriteAllText(filePath, newContent, Encoding.UTF8);
+                        }
+                    }
+                    else if (encoding == "ISO-8859-1")
+                    {
+                        Console.Write(StripCurrentPath(filePath));
+                        ConsoleWriteLineWithColor(" (ISO-8859-1 -> UTF-8)", ConsoleColor.Green);
 
                         if (!bTestRun)
                         {
@@ -327,6 +363,35 @@ namespace ReplaceText
             }
 
             return new string(_cList.ToArray());
+        }
+
+        private static string GetAllISO88591Chars(string path)
+        {
+            // http://en.wikipedia.org/wiki/ISO/IEC_8859-1
+
+            Regex rx = new Regex(@"[\x09\x0A\x0D\x20-\x7E]            # ASCII
+                                 | [\xA0-\xFF]                        # Western European (ISO-8859-1) range
+                                 ", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            StringBuilder sb = new StringBuilder();
+
+            string data = ReadAllChars(path);
+
+            foreach (Match mx in rx.Matches(data))
+            {
+                byte[] bb = new byte[mx.Value.Length];
+
+                for (int i = 0; i < mx.Value.Length; i++)
+                {
+                    bb[i] = (byte)mx.Value[i];
+                }
+
+                string a = Encoding.GetEncoding("ISO-8859-1").GetString(bb);
+
+                sb.Append(a);
+            }
+
+            return sb.ToString();
         }
 
         private static string GetAllBIG5Chars(string path)
