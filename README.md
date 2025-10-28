@@ -221,17 +221,34 @@ ReplaceText.exe /U C:\MyProject
 
 預設支援以下檔案格式：
 
-- **程式碼**: .cs, .js, .vb, .vbs, .jsl, .as
-- **Web**: .html, .htm, .cshtml, .vbhtml, .aspx, .ascx, .ashx, .master, .asp, .asa, .asax, .asmx, .css
-- **配置**: .config, .xml, .xsd, .xsl, .xslt
-- **專案**: .sln, .csproj, .vbproj, .wdproj
-- **資料**: .resx, .edmx, .dbml, .rdlc
-- **其他**: .settings, .cd, .wsf, .sitemap, .skin, .browser, .disco, .wsdl, .discomap, .webinfo
+- **.NET/Visual Studio**: .cs, .vb, .vbs, .cshtml, .vbhtml, .razor, .aspx, .ascx, .ashx, .master, .asmx, .resx, .settings, .edmx, .dbml, .rdlc, .sln, .csproj, .vbproj, .wdproj
+- **Web (JavaScript/TypeScript)**: .js, .jsx, .ts, .tsx, .mjs, .cjs, .html, .htm, .css, .scss, .sass, .less, .vue, .svelte
+- **配置與資料**: .config, .xml, .xsd, .xsl, .xslt, .sitemap, .skin, .browser, .disco, .wsdl, .discomap, .webinfo, .cd, .wsf
+- **Classic ASP**: .asp, .asa, .asax
+- **ActionScript**: .as, .jsl
+- **Python**: .py, .pyw
+- **Java**: .java
+- **C/C++**: .cpp, .c, .h, .hpp, .cc, .cxx, .hxx
+- **Go**: .go
+- **Rust**: .rs
+- **PHP**: .php, .phtml
+- **Ruby**: .rb, .erb
+- **Swift**: .swift
+- **Kotlin**: .kt, .kts
+- **Scala**: .scala
+- **Shell**: .sh, .bash, .zsh
+- **PowerShell**: .ps1, .psm1
+- **Dart**: .dart
+- **Objective-C**: .m, .mm
+- **R**: .r, .R
+- **SQL**: .sql
+- **Perl**: .pl, .pm
+- **Lua**: .lua
+- **Groovy/Gradle**: .groovy, .gradle
 
 使用 `/M` 選項可額外處理：
 
-- .txt
-- .csv
+- .txt, .md, .log, .csv, .ini, .json, .yml, .yaml, .properties, .toml, .env, .lock, .conf, .cfg, .gitignore, .editorconfig
 
 注意：使用 `/MO`（或 `-mo`）會隱含 `/M`，但 `/MO` 僅會針對 `TextExtensions` 清單中的副檔名進行處理（會跳過預設的程式碼/專案檔案副檔名）。
 

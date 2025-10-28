@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.1.2] - 2025-10-28
+
+### Added
+
+- 新增 `.razor` 檔案類型支援 (Blazor 元件)
+- 新增多種程式語言檔案格式支援:
+  - **Web 前端**: TypeScript (.ts, .tsx), JSX (.jsx), Vue (.vue), Svelte (.svelte), CSS 預處理器 (.scss, .sass, .less)
+  - **後端語言**: Python (.py, .pyw), Java (.java), Go (.go), Rust (.rs), PHP (.php, .phtml), Ruby (.rb, .erb), Swift (.swift), Kotlin (.kt, .kts), Scala (.scala)
+  - **系統程式語言**: C/C++ (.cpp, .c, .h, .hpp, .cc, .cxx, .hxx), Objective-C (.m, .mm)
+  - **腳本語言**: Shell (.sh, .bash, .zsh), PowerShell (.ps1, .psm1), Perl (.pl, .pm), Lua (.lua), R (.r, .R)
+  - **其他**: Dart (.dart), Groovy/Gradle (.groovy, .gradle), SQL (.sql)
+  - **JavaScript 模組**: ES 模組 (.mjs), CommonJS (.cjs)
+- 新增文字檔案格式: .gitignore, .editorconfig
+
 ## [1.1.0] - 2025-10-09
 
 ### Added
