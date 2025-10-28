@@ -30,19 +30,55 @@ namespace ReplaceText
         // 中央化副檔名清單，使用 HashSet 提升查詢與維護性
         private static readonly HashSet<string> CodeExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".sln", ".cs", ".js", ".vb", ".vbs", ".jsl", ".xsd", ".settings", ".htm", ".html",
-            ".cshtml", ".vbhtml", ".aspx", ".ascx", ".ashx", ".master", ".xslt", ".resx",
-            ".config", ".cd", ".rdlc", ".wsf", ".css", ".sitemap", ".skin", ".browser", ".disco",
-            ".wsdl", ".discomap", ".asa", ".asax", ".asp", ".as", ".asmx", ".webinfo", ".wdproj",
-            ".csproj", ".vbproj", ".xsl", ".edmx", ".dbml"
+            // .NET / Visual Studio
+            ".sln", ".cs", ".vb", ".vbs", ".csproj", ".vbproj", ".wdproj",
+            ".cshtml", ".vbhtml", ".razor", ".aspx", ".ascx", ".ashx", ".master", ".asmx",
+            ".resx", ".settings", ".edmx", ".dbml", ".rdlc",
+            
+            // Web - JavaScript/TypeScript
+            ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+            ".html", ".htm", ".css", ".scss", ".sass", ".less",
+            ".vue", ".svelte",
+            
+            // Configuration & Data
+            ".config", ".xml", ".xsd", ".xsl", ".xslt",
+            ".sitemap", ".skin", ".browser", ".disco", ".wsdl", ".discomap", ".webinfo",
+            ".cd", ".wsf",
+            
+            // Web - Classic ASP
+            ".asp", ".asa", ".asax",
+            
+            // ActionScript
+            ".as", ".jsl",
+            
+            // Other languages
+            ".py", ".pyw",           // Python
+            ".java",                 // Java
+            ".cpp", ".c", ".h", ".hpp", ".cc", ".cxx", ".hxx",  // C/C++
+            ".go",                   // Go
+            ".rs",                   // Rust
+            ".php", ".phtml",        // PHP
+            ".rb", ".erb",           // Ruby
+            ".swift",                // Swift
+            ".kt", ".kts",           // Kotlin
+            ".scala",                // Scala
+            ".sh", ".bash", ".zsh",  // Shell
+            ".ps1", ".psm1",         // PowerShell
+            ".dart",                 // Dart
+            ".m", ".mm",             // Objective-C
+            ".r", ".R",              // R
+            ".sql",                  // SQL
+            ".pl", ".pm",            // Perl
+            ".lua",                  // Lua
+            ".groovy", ".gradle"     // Groovy/Gradle
         };
 
         // 預設會被視為文字但在預設 (bModifyTextFile=false) 時忽略的副檔名。
         // 當 bModifyTextFile 為 true 時，會把這些副檔名包含進掃描範圍。
         private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".txt", ".md", ".log", ".sql", ".csv", ".ini", ".json", ".xml", ".yml", ".yaml",
-            ".properties", ".toml", ".env", ".lock", ".conf", ".cfg"
+            ".txt", ".md", ".log", ".csv", ".ini", ".json", ".xml", ".yml", ".yaml",
+            ".properties", ".toml", ".env", ".lock", ".conf", ".cfg", ".gitignore", ".editorconfig"
         };
 
         // 已知的二進位副檔名，所有可能會破壞或不應該當成文字處理的檔案
