@@ -591,6 +591,96 @@ namespace ReplaceText
         }
 
         /// <summary>
+        /// 換行字元類型
+        /// </summary>
+        private enum LineEndingType
+        {
+            CRLF,  // Windows (\r\n)
+            LF,    // Unix/Linux/Mac (\n)
+            CR     // Old Mac (\r)
+        }
+
+        /// <summary>
+        /// 偵測並統計文字內容中的換行字元類型
+        /// </summary>
+        /// <param name="content">文字內容</param>
+        /// <returns>回傳最常見的換行字元類型，如果沒有換行則回傳 null</returns>
+        private static LineEndingType? DetectLineEnding(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return null;
+
+            int crlfCount = 0;
+            int lfCount = 0;
+            int crCount = 0;
+
+            for (int i = 0; i < content.Length; i++)
+            {
+                if (content[i] == '\r')
+                {
+                    // 檢查是否為 CRLF
+                    if (i + 1 < content.Length && content[i + 1] == '\n')
+                    {
+                        crlfCount++;
+                        i++; // 跳過下一個 \n
+                    }
+                    else
+                    {
+                        // 單獨的 CR
+                        crCount++;
+                    }
+                }
+                else if (content[i] == '\n')
+                {
+                    // 單獨的 LF (不是 CRLF 的一部分)
+                    lfCount++;
+                }
+            }
+
+            // 如果沒有任何換行字元
+            if (crlfCount == 0 && lfCount == 0 && crCount == 0)
+                return null;
+
+            // 回傳數量最多的換行字元類型
+            if (crlfCount >= lfCount && crlfCount >= crCount)
+                return LineEndingType.CRLF;
+            else if (lfCount >= crCount)
+                return LineEndingType.LF;
+            else
+                return LineEndingType.CR;
+        }
+
+        /// <summary>
+        /// 將文字內容中的所有換行字元統一為指定的類型
+        /// </summary>
+        /// <param name="content">原始文字內容</param>
+        /// <param name="targetLineEnding">目標換行字元類型</param>
+        /// <returns>換行字元已統一的文字內容</returns>
+        private static string NormalizeLineEndings(string content, LineEndingType targetLineEnding)
+        {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            // 先將所有換行字元統一為 LF，簡化處理
+            // 1. 先將 CRLF 轉為 LF
+            string normalized = content.Replace("\r\n", "\n");
+            // 2. 將剩餘的 CR 轉為 LF
+            normalized = normalized.Replace("\r", "\n");
+
+            // 再根據目標類型轉換
+            switch (targetLineEnding)
+            {
+                case LineEndingType.CRLF:
+                    return normalized.Replace("\n", "\r\n");
+                case LineEndingType.CR:
+                    return normalized.Replace("\n", "\r");
+                case LineEndingType.LF:
+                default:
+                    return normalized; // 已經是 LF
+            }
+        }
+
+        /// <summary>
         /// 處理單一檔案的編碼轉換
         /// </summary>
         /// <returns>
@@ -838,9 +928,27 @@ namespace ReplaceText
 
                     #endregion
 
+                    #region 統一換行字元
+
+                    // 偵測並統一換行字元 (將混和的換行字元統一為數量最多的類型)
+                    LineEndingType? detectedLineEnding = DetectLineEnding(newContent);
+
+                    if (detectedLineEnding.HasValue)
+                    {
+                        string normalizedContent = NormalizeLineEndings(newContent, detectedLineEnding.Value);
+
+                        // 只有在換行字元確實有變化時才更新內容（即有混和換行字元的情況）
+                        if (normalizedContent != newContent)
+                        {
+                            newContent = normalizedContent;
+                        }
+                    }
+
+                    #endregion
+
                     if (!string.IsNullOrEmpty(newContent))
                     {
-                        // 判斷是否需要轉換：內容有變更或編碼需要轉換
+                        // 判斷是否需要轉換：內容有變更（包含字串替換或換行字元統一）、或編碼需要轉換
                         bool contentChanged = oldContent != newContent;
                         bool needEncodingConversion = encoding != "UTF8";
 
