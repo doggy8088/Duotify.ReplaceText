@@ -77,7 +77,7 @@ namespace ReplaceText
         // 當 bModifyTextFile 為 true 時，會把這些副檔名包含進掃描範圍。
         private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".txt", ".md", ".log", ".csv", ".ini", ".json", ".xml", ".yml", ".yaml",
+            ".txt", ".md", ".log", ".csv", ".ini", ".json", ".yml", ".yaml",
             ".properties", ".toml", ".env", ".lock", ".conf", ".cfg", ".gitignore", ".editorconfig"
         };
 

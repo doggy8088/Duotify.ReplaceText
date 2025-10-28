@@ -248,7 +248,7 @@ ReplaceText.exe /U C:\MyProject
 
 使用 `/M` 選項可額外處理：
 
-- .txt, .md, .log, .csv, .ini, .json, .xml, .yml, .yaml, .properties, .toml, .env, .lock, .conf, .cfg, .gitignore, .editorconfig
+- .txt, .md, .log, .csv, .ini, .json, .yml, .yaml, .properties, .toml, .env, .lock, .conf, .cfg, .gitignore, .editorconfig
 
 注意：使用 `/MO`（或 `-mo`）會隱含 `/M`，但 `/MO` 僅會針對 `TextExtensions` 清單中的副檔名進行處理（會跳過預設的程式碼/專案檔案副檔名）。
 
