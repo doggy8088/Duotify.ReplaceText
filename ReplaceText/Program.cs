@@ -930,14 +930,14 @@ namespace ReplaceText
 
                     #region 統一換行字元
 
-                    // 偵測並統一換行字元 (根據數量最多的換行字元類型)
+                    // 偵測並統一換行字元 (將混和的換行字元統一為數量最多的類型)
                     LineEndingType? detectedLineEnding = DetectLineEnding(newContent);
 
                     if (detectedLineEnding.HasValue)
                     {
                         string normalizedContent = NormalizeLineEndings(newContent, detectedLineEnding.Value);
 
-                        // 只有在換行字元確實有變化時才更新內容
+                        // 只有在換行字元確實有變化時才更新內容（即有混和換行字元的情況）
                         if (normalizedContent != newContent)
                         {
                             newContent = normalizedContent;
@@ -948,7 +948,7 @@ namespace ReplaceText
 
                     if (!string.IsNullOrEmpty(newContent))
                     {
-                        // 判斷是否需要轉換：內容有變更、編碼需要轉換或換行字元需要統一
+                        // 判斷是否需要轉換：內容有變更（包含字串替換或換行字元統一）、或編碼需要轉換
                         bool contentChanged = oldContent != newContent;
                         bool needEncodingConversion = encoding != "UTF8";
 
