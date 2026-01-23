@@ -1,0 +1,11 @@
+{
+  "target": "./MyProject",
+  "flags": ["/MO", "/T"],
+  "replacements": [
+    { "old": "http://", "new": "https://" },
+    { "old": "localhost", "new": "127.0.0.1" },
+    { "old": "Copyright 2023", "new": "Copyright 2024" },
+    { "old": "api.example.com", "new": "api.production.example.com" },
+    { "old": "DEBUG = true", "new": "DEBUG = false" }
+  ]
+}
