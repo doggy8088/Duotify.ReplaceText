@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Duotify.ReplaceText Skill - 批次替換範例",
+  "target": "./MyProject",
+  "options": {
+    "dryRun": true,
+    "flags": ["MO", "GBK", "V"]
+  },
+  "replacements": [
+    {
+      "old": "http://",
+      "new": "https://",
+      "description": "將 HTTP 轉換為 HTTPS"
+    },
+    {
+      "old": "localhost",
+      "new": "127.0.0.1",
+      "description": "將 localhost 轉換為 IP"
+    },
+    {
+      "old": "Copyright 2023",
+      "new": "Copyright 2024",
+      "description": "更新版權年份"
+    },
+    {
+      "old": "api.example.com",
+      "new": "api.production.example.com",
+      "description": "切換到正式環境 API"
+    },
+    {
+      "old": "DEBUG = true",
+      "new": "DEBUG = false",
+      "description": "關閉除錯模式"
+    }
+  ],
+  "metadata": {
+    "author": "AI Agent",
+    "createdAt": "2025-01-01T00:00:00Z",
+    "purpose": "批次更新專案配置",
+    "notes": [
+      "使用 GBK 優先模式處理簡體中文",
+      "僅處理 TextExtensions 清單中的檔案",
+      "請先以 dryRun: true 預覽變更"
+    ]
+  }
+}

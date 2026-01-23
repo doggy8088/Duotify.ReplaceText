@@ -1,0 +1,161 @@
+# Duotify.ReplaceText Skill 定義
+# 給 MCP / AI Agent / Pipeline 使用
+
+name: duotify-replacetext
+version: "1.0.0"
+description: |
+  安全的、可重複、可被 AI 呼叫的文字轉碼 / 批次替換能力。
+  基於 Duotify.ReplaceText .NET Global Tool，提供 UTF-8 BOM 轉換與字串替換功能。
+
+author: Will 保哥 (doggy8088)
+license: MIT
+homepage: https://github.com/doggy8088/Duotify.ReplaceText
+
+# 系統需求
+requirements:
+  runtime: ".NET 8.0+"
+  tool: "Duotify.ReplaceText"
+  tool_install: "dotnet tool install --global Duotify.ReplaceText"
+
+# Skill 提供的命令
+commands:
+  install:
+    description: 安裝或更新 ReplaceText .NET Global Tool
+    usage: duotify-replacetext install
+
+  doctor:
+    description: 檢查環境與工具是否正確安裝
+    usage: duotify-replacetext doctor
+
+  run:
+    description: 執行文字編碼轉換或字串替換
+    usage: duotify-replacetext run [options]
+    parameters:
+      - name: target
+        type: string
+        required: true
+        description: 目標目錄或檔案路徑
+
+      - name: old
+        type: string
+        required: false
+        description: 要替換的原始字串
+
+      - name: new
+        type: string
+        required: false
+        description: 替換後的新字串
+
+      - name: mode
+        type: string
+        required: false
+        enum: [M, MO, mo]
+        description: |
+          處理模式：
+          - M: 修改已知的文字檔案
+          - MO/mo: 僅處理 TextExtensions 清單中的副檔名
+
+      - name: dry-run
+        type: boolean
+        required: false
+        default: true
+        description: 測試模式，不實際修改檔案（Skill 預設為安全模式）
+
+      - name: apply
+        type: boolean
+        required: false
+        default: false
+        description: 確認執行，實際寫入檔案變更
+
+      - name: verbose
+        type: boolean
+        required: false
+        default: false
+        description: 顯示詳細輸出
+
+      - name: full-path
+        type: boolean
+        required: false
+        default: false
+        description: 顯示完整檔案路徑
+
+      - name: gbk
+        type: boolean
+        required: false
+        default: false
+        description: GBK (GB18030) 字集優先於 Big5 判斷
+
+      - name: unknown
+        type: boolean
+        required: false
+        default: false
+        description: 自動判斷未知檔案類型
+
+      - name: backup
+        type: boolean
+        required: false
+        default: false
+        description: 在修改前建立備份（v2 功能）
+
+# 支援的旗標（直接 passthrough 給 replacetext CLI）
+cli_flags:
+  - flag: "/T"
+    description: 測試執行模式 (Dry Run)
+  - flag: "/M"
+    description: 修改已知的文字檔案
+  - flag: "/MO"
+    description: 僅處理 TextExtensions 清單中的副檔名
+  - flag: "-mo"
+    description: /MO 的簡短別名
+  - flag: "/V"
+    description: 詳細輸出模式
+  - flag: "/F"
+    description: 顯示完整檔案路徑
+  - flag: "/GBK"
+    description: GBK 字集優先
+  - flag: "/U"
+    description: 自動判斷未知檔案類型
+
+# 安全設定
+safety:
+  default_dry_run: true
+  require_apply_flag: true
+  backup_directory: ".replacetext-backup"
+
+# 輸出格式
+output:
+  formats:
+    - text
+    - json
+  exit_codes:
+    0: 成功
+    1: 一般錯誤
+    2: 工具未安裝
+    3: 目標路徑不存在
+    4: 權限不足
+
+# 範例
+examples:
+  - name: 簡單轉換
+    description: 將目錄中所有檔案轉換為 UTF-8（測試模式）
+    command: duotify-replacetext run --target ./MyProject
+
+  - name: 實際執行
+    description: 確認執行轉換
+    command: duotify-replacetext run --target ./MyProject --apply
+
+  - name: 字串替換
+    description: 替換字串並轉換編碼
+    command: duotify-replacetext run --target ./MyProject --old "foo" --new "bar" --apply
+
+  - name: 進階 passthrough
+    description: 使用原生 CLI 旗標
+    command: duotify-replacetext run --target ./MyProject -- /MO /GBK /V
+
+# 標籤
+tags:
+  - encoding
+  - utf8
+  - text-processing
+  - batch-replace
+  - dotnet-tool
